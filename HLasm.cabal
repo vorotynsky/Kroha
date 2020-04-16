@@ -1,0 +1,48 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 23ece668f673fbc70cf0f0284c2e54a4eaa91bb851913b255adabeba0a9d5710
+
+name:           HLasm
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/vorotynsky/HLasm#readme>
+homepage:       https://github.com/vorotynsky/HLasm#readme
+bug-reports:    https://github.com/vorotynsky/HLasm/issues
+author:         Vorotynsky Maxim
+maintainer:     vorotynsky.maxim@gmail.com
+copyright:      2020 Vorotynsky Maxim
+license:        GPL-3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/vorotynsky/HLasm
+
+library
+  exposed-modules:
+      HLasm
+  other-modules:
+      Paths_HLasm
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
+
+executable HLasm-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_HLasm
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      HLasm
+    , base >=4.7 && <5
+  default-language: Haskell2010
