@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 23ece668f673fbc70cf0f0284c2e54a4eaa91bb851913b255adabeba0a9d5710
+-- hash: dffe86a53fe67e67a6c006f090f238bf0024c776165995e723c28077edc64bfa
 
 name:           HLasm
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 library
   exposed-modules:
       HLasm
+      HLasm.Ast
   other-modules:
       Paths_HLasm
   hs-source-dirs:
