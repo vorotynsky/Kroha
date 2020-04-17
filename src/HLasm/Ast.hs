@@ -1,9 +1,9 @@
 -- Copyright (c) 2020 Vorotynsky Maxim
 
-module HLasm.Ast where 
+module HLasm.Ast where
 
 
-data Type = Type 
+data Type = Type
     { typeName :: String
     , typeSize :: Int }
     deriving (Show, Eq)
@@ -12,39 +12,41 @@ type VariableName = String
 type RegisterName = String
 type Label = String
 
-data CompareType =
-    Equals 
+data CompareType = 
+    Equals
     | NotEquals
     | Greater
     | Less
     deriving (Show, Eq)
 
-type Condition e = (e, CompareType, e)
-
-data HLValue =
-    Variable  (VariableName, Type)
-    | Register  (VariableName, RegisterName)
-    | Value     String
+data HLValuable = 
+    Variable (VariableName, Type)
+    | Register (VariableName, RegisterName)
     deriving (Show, Eq)
 
-data IfBranch f = IfBranch (Label, Condition HLValue, f)
+data HLValue = 
+    NameValue VariableName
+    | IntegerValue Int
+    | StringValue String
     deriving (Show, Eq)
 
-data IfNode f = IfNode 
-    { mainIf :: IfBranch f
-    , elseIfs :: [IfBranch f]
-    , elseBlock :: Maybe (f, Label) }
+data Condition = Condition (HLValue, CompareType, HLValue)
     deriving (Show, Eq)
 
-data HLElement =
-    InstructionSet  [HLElement]
-    | VariableDeclaration HLValue
+data IfBranch f = IfBranch (Label, Condition, f)
+    deriving (Show, Eq)
+
+data HLElement = 
+    InstructionSet [HLElement]
+    | VariableDeclaration HLValuable
     | Frame (Maybe Label) HLElement
-    | If  (IfNode HLElement)
-    | While  Label HLElement
-    | DoWhile  Label HLElement
-    | Break  Label
-    | Call  Label [HLValue]
-    | Assigment  VariableName (Either VariableName String)
-    | AssembleyCall String
+    | If { mainIf    :: IfBranch HLElement
+         , elseIfs   :: [IfBranch HLElement]
+         , elseBlock :: Maybe (HLElement, Label) }
+    | While Label HLElement
+    | DoWhile Label HLElement
+    | Break Label
+    | Call Label [VariableName]
+    | Assigment VariableName HLValue
+    | AssemblyCall String
     deriving (Show, Eq)
