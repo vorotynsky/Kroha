@@ -2,7 +2,7 @@
 
 {-# LANGUAGE FlexibleContexts #-}
 
-module HLasm.Parser where
+module HLasm.Parser(parse)  where
 
 import           HLasm.Ast
 
@@ -79,8 +79,8 @@ asmCall = AssemblyCall <$> (ws *> char '!' *> some (predicate (/= '\n')) <* char
 break   = Break <$> (astring "break" *> braked name)
 call    = Call <$> (ws *> string "call" *> name) <*> braked (stepBy (char ',') name)
 
-register = aws $ curry Register <$> (string "reg" *> name) <*> (achar '=' *> some (predicate isAlpha))
-variable = aws $ curry Variable <$> (string "var" *> name) <*> (achar ':' *> vtype)
+register = aws $ curry (VariableDeclaration . Register) <$> (string "reg" *> name) <*> (achar '=' *> some (predicate isAlpha))
+variable = aws $ curry (VariableDeclaration . Variable) <$> (string "var" *> name) <*> (achar ':' *> vtype)
         where vtype = Type <$> name <*> (braked nat)
 
 value = (IntegerValue <$> aws nat) <|> (StringValue <$> literal) <|> (NameValue <$> name)
@@ -102,3 +102,14 @@ ifstatment p = (\i ei e -> If i ei e) <$> ifblock <*> many elseif <*> opt elseb
 whileHead = ws *> string "while" *> braked name
 while p   = While <$> whileHead <*> block p
 dowhile p = (\e l -> DoWhile l e) <$> (ws *> string "do" *> block p) <*> whileHead
+
+
+hlasm = reduce [ asmCall,       call,      HLasm.Parser.break,
+                 register,      variable,  assigment,
+                 frame hlasm,   ifstatment hlasm,
+                 while hlasm,   dowhile    hlasm ]
+    where reduce (x:xs) = foldl (<|>) x xs
+
+parse :: String -> Maybe HLElement
+parse = fmap snd . runParser hlasm
+

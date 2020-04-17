@@ -1,6 +1,23 @@
 module Main where
 
-import HLasm
+import           Data.Maybe
+import           System.Environment
+import           System.IO
+
+import           HLasm.Ast
+import           HLasm.Parser
+
+parseAll :: String -> String
+parseAll = fromMaybe "Parse error" . fmap show . parse
+
+join :: String -> [String] -> String
+join s []      = ""
+join s [x]     = x
+join s (x:xs)  = x ++ s ++ join s xs
 
 main :: IO ()
-main = someFunc
+main = do
+    args <- getArgs
+    contents <- sequence . fmap readFile $ args
+    putStrLn . join "\n\n" . fmap (parseAll) $ contents
+
