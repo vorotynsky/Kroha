@@ -1,3 +1,5 @@
+-- Copyright (c) 2020 Vorotynsky Maxim
+
 module Main where
 
 import           Data.Maybe

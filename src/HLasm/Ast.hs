@@ -5,7 +5,7 @@ module HLasm.Ast where
 
 data Type = Type
     { typeName :: String
-    , typeSize :: Int }
+    , typeSize :: Maybe Int }
     deriving (Show, Eq)
 
 type VariableName = String
@@ -33,7 +33,7 @@ data HLValue =
 data Condition = Condition (HLValue, CompareType, HLValue)
     deriving (Show, Eq)
 
-data IfBranch f = IfBranch (Label, Condition, f)
+data IfBranch f = IfBranch (Condition, f)
     deriving (Show, Eq)
 
 data HLElement = 
@@ -41,8 +41,9 @@ data HLElement =
     | VariableDeclaration HLValuable
     | Frame (Maybe Label) HLElement
     | If { mainIf    :: IfBranch HLElement
+         , label     :: Label
          , elseIfs   :: [IfBranch HLElement]
-         , elseBlock :: Maybe (HLElement, Label) }
+         , elseBlock :: Maybe (HLElement) }
     | While Label HLElement
     | DoWhile Label HLElement
     | Break Label

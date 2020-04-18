@@ -81,7 +81,7 @@ call    = Call <$> (ws *> string "call" *> name) <*> braked (stepBy (char ',') n
 
 register = aws $ curry (VariableDeclaration . Register) <$> (string "reg" *> name) <*> (achar '=' *> some (predicate isAlpha))
 variable = aws $ curry (VariableDeclaration . Variable) <$> (string "var" *> name) <*> (achar ':' *> vtype)
-        where vtype = Type <$> name <*> (braked nat)
+        where vtype = Type <$> name <*> (Just <$> braked nat)
 
 value = (IntegerValue <$> aws nat) <|> (StringValue <$> literal) <|> (NameValue <$> name)
 assigment = Assigment <$> name <*> (achar '=' *> value)
@@ -93,11 +93,10 @@ condition = (\a c b -> Condition (a, c, b)) <$> value <*> cond <*> value
     where p x s = const x <$> string s
           cond = p Equals "=="  <|> p NotEquals "!=" <|> p Greater "<" <|> p Less ">"
 
-ifstatment p = (\i ei e -> If i ei e) <$> ifblock <*> many elseif <*> opt elseb
-    where branch (c, l) b = IfBranch (l, c, b)
-          ifblock = astring "if" *> (branch <$> (braked $ (,) <$> (condition <* char ',') <*> name) <*> block p)
-          elseif  = (ws *> string "else" *> ws1 *> ifblock)
-          elseb   = astring "else" *> ((\a b -> (b, a)) <$> braked name <*> block p)
+ifstatment p = (\(i, n) ei e -> If i n ei e) <$> ifblock <*> many elseif <*> opt elseb
+    where ifblock = (\(c, l) b -> (IfBranch(c, b), l)) <$> (astring "if" *> (braked $ (,) <$> (condition <* char ',') <*> name)) <*> block p
+          elseif  = curry IfBranch <$> (ws *> string "else" *> ws1 *> string "if" *> braked (aws condition)) <*> block p
+          elseb   = astring "else" *> block p
 
 whileHead = ws *> string "while" *> braked name
 while p   = While <$> whileHead <*> block p
