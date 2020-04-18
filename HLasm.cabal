@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c2ba521e29b1c936d8a4d0668ea7a4116daa5a3c3ba2bbc2cde1414d481648d8
+-- hash: 26f77e337833b655de4ec227b4b4bd2710e76b38726b7d265ca8435bb84b6808
 
 name:           HLasm
 version:        0.1.0.0
@@ -34,6 +34,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , containers >=0.6 && <0.7
   default-language: Haskell2010
 
 executable HLasm-exe
@@ -46,4 +47,5 @@ executable HLasm-exe
   build-depends:
       HLasm
     , base >=4.7 && <5
+    , containers >=0.6 && <0.7
   default-language: Haskell2010

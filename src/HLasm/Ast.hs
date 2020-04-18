@@ -2,6 +2,7 @@
 
 module HLasm.Ast where
 
+import Data.Tree
 
 data Type = Type
     { typeName :: String
@@ -33,21 +34,18 @@ data HLValue =
 data Condition = Condition (HLValue, CompareType, HLValue)
     deriving (Show, Eq)
 
-data IfBranch f = IfBranch (Condition, f)
-    deriving (Show, Eq)
-
 data HLElement = 
-    InstructionSet [HLElement]
+    InstructionSet
     | VariableDeclaration HLValuable
-    | Frame (Maybe Label) HLElement
-    | If { mainIf    :: IfBranch HLElement
-         , label     :: Label
-         , elseIfs   :: [IfBranch HLElement]
-         , elseBlock :: Maybe (HLElement) }
-    | While Label HLElement
-    | DoWhile Label HLElement
+    | Frame (Maybe Label)
+    | If Label
+    | IfBranch (Maybe Condition)
+    | While Label
+    | DoWhile Label
     | Break Label
     | Call Label [VariableName]
     | Assigment VariableName HLValue
     | AssemblyCall String
     deriving (Show, Eq)
+
+type SyntaxTree = Tree HLElement

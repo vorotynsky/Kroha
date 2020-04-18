@@ -3,6 +3,7 @@
 module Main where
 
 import           Data.Maybe
+import           Data.Tree (drawTree)
 import           System.Environment
 import           System.IO
 
@@ -10,7 +11,7 @@ import           HLasm.Ast
 import           HLasm.Parser
 
 parseAll :: String -> String
-parseAll = fromMaybe "Parse error" . fmap show . parse
+parseAll = fromMaybe "Parse error" . fmap (drawTree . fmap show) . parse
 
 join :: String -> [String] -> String
 join s []      = ""
@@ -22,4 +23,3 @@ main = do
     args <- getArgs
     contents <- sequence . fmap readFile $ args
     putStrLn . join "\n\n" . fmap (parseAll) $ contents
-
