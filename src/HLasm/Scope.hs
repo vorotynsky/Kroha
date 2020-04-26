@@ -1,6 +1,15 @@
 -- Copyright (c) 2020 Vorotynsky Maxim
 
-module HLasm.Scope where
+module HLasm.Scope 
+( semantic
+, SemanticTree(..)
+, ScopeData(..)
+, VariableData(..)
+, LabelData(..)
+, findVar
+, findLabel
+, Scope(..)
+, elementToScope) where
 
 import           Control.Monad.Zip
 import           Data.Tree
@@ -42,11 +51,16 @@ instance Semigroup (ScopedElement) where
 instance Monoid (ScopedElement) where
     mempty = ScopedElement (InstructionSet, FluentScope)
 
+foldz :: (c -> a) -> (a -> b -> c) -> a -> [b] -> [c]
+foldz _ _ _ [ ]    = []
+foldz g f a [x]    = [f a x]
+foldz g f a (x:xs) = elem : (foldz g f (g elem) xs)
+    where elem = f a x
+
 fromScopeData :: Scope -> Tree (HLElement, ScopeData) -> Tree (HLElement, Scope)
 fromScopeData s t@(Node (el@InstructionSet, sd) xs@(_:_)) =  -- non-empty InstructionSet
-    Node (el, currScope) [fromScopeData s . inScopeElem nestedTree $ xs]
+    Node (el, currScope) (foldz (\(Node (_,s) _) -> s) (fromScopeData) s xs)
         where currScope = Scope sd s el
-              inScopeElem f = fmap (\(ScopedElement x) -> x) . f . fmap (fmap ScopedElement)
 fromScopeData s (Node (el, sd) xs) = Node (el, currScope) (fmap (fromScopeData currScope) xs)
     where currScope = Scope sd s el
 
