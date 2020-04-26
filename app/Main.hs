@@ -2,21 +2,17 @@
 
 module Main where
 
-import           Data.Maybe
 import           Data.Tree (drawTree)
-import           System.Environment
-import           System.IO
+import           System.Environment (getArgs)
+import           Control.Monad ((>=>))
 
-import           HLasm.Ast
+import           Funcs
 import           HLasm.Parser
+import           HLasm.Scope
 
 parseAll :: String -> String
-parseAll = fromMaybe "Parse error" . fmap (drawTree . fmap show) . parse
-
-join :: String -> [String] -> String
-join s []      = ""
-join s [x]     = x
-join s (x:xs)  = x ++ s ++ join s xs
+parseAll = get . fmap (drawTree . fmap show) . pipeline
+    where pipeline = err "Parse error" parse >=> err "Scope error" (semantic)
 
 main :: IO ()
 main = do

@@ -2,15 +2,15 @@
 
 {-# LANGUAGE FlexibleContexts #-}
 
-module HLasm.Parser{-(parse)-}  where
+module HLasm.Parser(parse)  where
 
 import           HLasm.Ast
 
 import           Control.Applicative
 import           Data.Char
-import           Data.Tree
-import           Data.Maybe
 import           Data.List.NonEmpty
+import           Data.Maybe
+import           Data.Tree
 
 newtype Parser a = Parser { runParser :: String -> Maybe (String, a) }
 
@@ -70,12 +70,7 @@ nat = read <$> some (predicate isDigit)
 treeParser :: (b -> Parser (a, [b])) -> Parser b -> Parser (Tree a)
 treeParser f p = p >>= unfoldTreeM f
 
-ftree :: Tree (Tree a) -> Tree a
-ftree (Node t [])  = t
-ftree (Node (Node t f) x) = Node t (f ++ fmap ftree x)
-
 leafP f = treeParser (\x -> pure (f x, []))
-nodeP f parg = treeParser (\i -> (\x -> (f x, [i])) <$> parg)
 
 --------- Parsing ---------
 achar   = aws . char
@@ -107,7 +102,7 @@ condition = (\a c b -> Condition (a, c, b)) <$> value <*> cond <*> value
     where p x s = const x <$> string s
           cond = p Equals "=="  <|> p NotEquals "!=" <|> p Greater "<" <|> p Less ">"
 
-ifstatment p = (\(l, a) b c -> Node (If l) (b ++ maybeToList c)) <$> (ifblock >>= (\(l, e) -> (,) l <$> treefy (pure e))) <*> many (treefy elseif) <*> opt (treefy elseb)
+ifstatment p = (\(l, a) b c -> Node (If l) (a : b ++ maybeToList c)) <$> (ifblock >>= (\(l, e) -> (,) l <$> treefy (pure e))) <*> many (treefy elseif) <*> opt (treefy elseb)
     where treefy el = (\a b -> Node a [b]) <$> el <*> (block p)
           ifblock   = ((\(c, l) -> (l, IfBranch $ Just c)) <$> (astring "if" *> (braked $ (,) <$> (condition <* char ',') <*> name)))
           elseif    = (IfBranch . Just) <$> (ws *> string "else" *> ws1 *> string "if" *> braked (aws condition))
@@ -124,10 +119,5 @@ hlasm = reduce [ asmCall,       call,      HLasm.Parser.break,
                  while hlasm,   dowhile    hlasm ]
     where reduce (x:xs) = foldl (<|>) x xs
 
-f a = putStr $ drawTree . fmap (show) . snd. fromJust $ a
-    where fromJust (Just x) = x
-
 parse :: String -> Maybe SyntaxTree
 parse = fmap snd . runParser hlasm
--- parse = \x -> Nothing
- 
