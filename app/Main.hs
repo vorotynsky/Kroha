@@ -10,10 +10,14 @@ import           Funcs
 import           HLasm.Parser
 import           HLasm.Scope
 import           HLasm.Types
+import           HLasm.Frame
 
 parseAll :: String -> String
 parseAll = get . fmap (drawTree . fmap show) . pipeline
-    where pipeline = err "Parse error" parse >=> err "Scope error" (semantic) >=> err "Type error" typeCheck
+    where pipeline = err "Parse error" parse 
+            >=> err "Scope error" (semantic) 
+            >=> err "Type error" typeCheck
+            >=> Right . ziplify buildFrameTree . fmap (\(a, b, c) -> (a, (b, c)))
 
 main :: IO ()
 main = do
