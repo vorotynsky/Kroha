@@ -2,15 +2,17 @@
 
 module HLasm.Frame
 ( VarFrame(..)
-, FrameTree(..)
 , frameSize
 , buildFrame
 , buildFrameTree
+, StackFrame(..)
+, buildStackFrames
 ) where
 
 import           Data.List
 import           Data.Tree
 import           HLasm.Ast
+import           HLasm.Scope hiding (Scope(Root))
 
 valueSize :: HLValuable -> Int
 valueSize (Variable (_, t)) = size t
@@ -31,8 +33,6 @@ frameSize = foldr (+) 0 . fmap valueSize . (\(VarFrame xs) -> fmap fst xs)
 buildFrame :: [HLValuable] -> VarFrame
 buildFrame xs = VarFrame $ zip xs (fmap (foldl (+) 0) . inits . fmap valueSize $ xs)
 
-type FrameTree = Tree (HLElement, VarFrame)
-
 frameVars :: SyntaxTree -> [HLValuable]
 frameVars (Node el@(Frame _) [])    = []
 frameVars (Node el@(Frame _) (x:_)) = frameVars x
@@ -40,6 +40,19 @@ frameVars (Node el@(Frame _) (x:_)) = frameVars x
           frameVars (Node el@(Frame _) _) = []
           frameVars (Node _ xs) = concatMap frameVars xs
 
-buildFrameTree :: SyntaxTree -> FrameTree
+buildFrameTree :: SyntaxTree -> Tree (HLElement, VarFrame)
 buildFrameTree t@(Node el@(HLasm.Ast.Frame _) xs) = Node (el, buildFrame . frameVars $ t) (fmap buildFrameTree xs)
 buildFrameTree (Node el xs) = Node (el, empty) (fmap buildFrameTree xs)
+
+data StackFrame = 
+    Root 
+    | Fluent { parentFrame :: StackFrame }
+    | StackFrame 
+        { parentFrame :: StackFrame
+        , variables   :: VarFrame }
+    deriving (Show, Eq)
+
+buildStackFrames :: StackFrame -> SyntaxTree -> Tree (HLElement, StackFrame)
+buildStackFrames parent tree@(Node el@(Frame _) xs) = Node (el, frame) (fmap (buildStackFrames frame) xs)
+    where frame = StackFrame parent . buildFrame $ frameVars tree 
+buildStackFrames parent (Node el xs) = Node (el, Fluent parent) (fmap (buildStackFrames parent) xs)

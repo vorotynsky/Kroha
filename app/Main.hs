@@ -5,19 +5,22 @@ module Main where
 import           Data.Tree (drawTree)
 import           System.Environment (getArgs)
 import           Control.Monad ((>=>))
+import           Control.Monad.Zip
 
 import           Funcs
 import           HLasm.Parser
-import           HLasm.Scope
-import           HLasm.Types
-import           HLasm.Frame
+import           HLasm.Scope (semantic)
+import           HLasm.Types (typeCheck)
+import           HLasm.Frame (StackFrame(Root), buildStackFrames)
 
 parseAll :: String -> String
 parseAll = get . fmap (drawTree . fmap show) . pipeline
-    where pipeline = err "Parse error" parse 
-            >=> err "Scope error" (semantic) 
-            >=> err "Type error" typeCheck
-            >=> Right . ziplify buildFrameTree . fmap (\(a, b, c) -> (a, (b, c)))
+    where pipeline src = 
+            do parsed    <- err "Parse error" parse src
+               semantic  <- err "Scope error" semantic parsed
+               _         <- err "Type error"  typeCheck semantic
+               stack     <- Right $ (buildStackFrames Root) parsed
+               Right $ mzipWith (\(e, v, l) (_, sf) -> (e, v, l, sf)) semantic stack
 
 main :: IO ()
 main = do
