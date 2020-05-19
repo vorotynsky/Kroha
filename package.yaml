@@ -21,6 +21,7 @@ description:         Please see the README on GitHub at <https://github.com/voro
 dependencies:
 - base >= 4.7 && < 5
 - containers >= 0.6 && < 0.7
+- extra >= 1.0 && < 1.8
 
 library:
   source-dirs: src

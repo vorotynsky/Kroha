@@ -7,6 +7,7 @@ module HLasm.Frame
 , buildFrameTree
 , StackFrame(..)
 , buildStackFrames
+, findOffset 
 ) where
 
 import           Data.List
@@ -22,10 +23,13 @@ valueSize (Variable (_, t)) = size t
 valueSize (Register (_, r)) = undefined
 
 newtype VarFrame = VarFrame [(HLValuable, Int)]
-    deriving (Show, Eq)
+    deriving (Show, Eq) 
 
 empty :: VarFrame
 empty = VarFrame []
+
+getList :: VarFrame -> [(HLValuable, Int)]
+getList (VarFrame xs) = xs
 
 frameSize :: VarFrame -> Int
 frameSize = foldr (+) 0 . fmap valueSize . (\(VarFrame xs) -> fmap fst xs)
@@ -56,3 +60,13 @@ buildStackFrames :: StackFrame -> SyntaxTree -> Tree (HLElement, StackFrame)
 buildStackFrames parent tree@(Node el@(Frame _) xs) = Node (el, frame) (fmap (buildStackFrames frame) xs)
     where frame = StackFrame parent . buildFrame $ frameVars tree 
 buildStackFrames parent (Node el xs) = Node (el, Fluent parent) (fmap (buildStackFrames parent) xs)
+
+findOffset :: StackFrame -> VariableName -> (Maybe Int)
+findOffset Root _                        = Nothing
+findOffset (Fluent parent) name          = findOffset parent name
+findOffset (StackFrame parent vars) name 
+    | (any predicate list) = fmap snd . find predicate $ list
+    | otherwise = fmap (+ frameSize vars) $ findOffset parent name
+    where list = getList vars
+          predicate ((Variable (n, _)), _) | n == name = True
+          predicate _ = False
