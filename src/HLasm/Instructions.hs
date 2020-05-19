@@ -4,6 +4,7 @@ module HLasm.Instructions
 ( Offset(..), Target(..), InstructionSet(..)
 , Instructions(..)
 , BackEnd(..)
+, runBackend
 , instructions
 ) where
 
@@ -39,6 +40,7 @@ data Instructions =
 type InstructionSet = [Instructions]
 
 newtype BackEnd = BackEnd (InstructionSet -> String)
+runBackend (BackEnd f) x = f x
 
 target :: StackFrame -> VariableData -> Target
 target _ (VariableData (_, VariableDeclaration (HLasm.Ast.Register(_, reg)))) = HLasm.Instructions.Register reg

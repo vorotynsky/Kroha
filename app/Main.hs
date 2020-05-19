@@ -12,10 +12,11 @@ import           HLasm.Parser
 import           HLasm.Scope (semantic)
 import           HLasm.Types (typeCheck)
 import           HLasm.Frame (StackFrame(Root), buildStackFrames)
-import           HLasm.Instructions (instructions)
+import           HLasm.Instructions (instructions, BackEnd(..), runBackend)
+import           HLasm.Backend.Nasm
 
 parseAll :: String -> String
-parseAll = get . fmap (join ";\n" . fmap show) . pipeline
+parseAll = get . pipeline
     where pipeline src = 
             do parsed    <- err "Parse error" parse src
                semantic  <- err "Scope error" semantic parsed
@@ -23,7 +24,7 @@ parseAll = get . fmap (join ";\n" . fmap show) . pipeline
                stack     <- Right $ (buildStackFrames Root) parsed
                tree <- Right $ mzipWith (\(e, v, l) (_, sf) -> (e, v, l, sf)) semantic stack 
                instructions <- err "Assembly error" instructions tree
-               Right $ instructions
+               Right . runBackend nasm $ instructions
                
 main :: IO ()
 main = do
