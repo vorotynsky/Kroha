@@ -3,7 +3,7 @@
 module HLasm.Instructions
 ( Offset(..), Target(..), InstructionSet(..)
 , Instructions(..)
-, FrotEnd(..)
+, BackEnd(..)
 , instructions
 ) where
 
@@ -16,11 +16,12 @@ import           HLasm.Frame
 import           HLasm.Scope
 
 type Offset = Int
+type Size = Int
 
 data Target = 
     NamedTarget VariableName
     | Register RegisterName
-    | FrameVar (Offset, VariableName)
+    | FrameVar (Offset, Size, VariableName)
     | ConstantTarget Int
     deriving (Show, Eq)
 
@@ -37,13 +38,14 @@ data Instructions =
 
 type InstructionSet = [Instructions]
 
-newtype FrotEnd = FrotEnd (InstructionSet -> String)
+newtype BackEnd = BackEnd (InstructionSet -> String)
 
 target :: StackFrame -> VariableData -> Target
 target _ (VariableData (_, VariableDeclaration (HLasm.Ast.Register(_, reg)))) = HLasm.Instructions.Register reg
-target frame (VariableData (name, _)) = case findOffset frame name of
-    Just x  -> FrameVar (x, name)
+target frame (VariableData (name, e)) = case findOffset frame name of
+    Just x  -> FrameVar (x, size e, name)
     Nothing -> NamedTarget name
+    where size (VariableDeclaration v) = valueSize v
 
 findTarget :: StackFrame -> [VariableData] -> VariableName -> Target
 findTarget frame xs name = target frame . fromJust . find (\(VariableData (n, _)) -> n == name) $ xs

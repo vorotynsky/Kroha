@@ -2,6 +2,7 @@
 
 module HLasm.Frame
 ( VarFrame(..)
+, valueSize
 , frameSize
 , buildFrame
 , buildFrameTree
@@ -22,20 +23,17 @@ valueSize (Variable (_, t)) = size t
           size (Type _ Nothing)  = error "Unsupported types withoud specified size"
 valueSize (Register (_, r)) = undefined
 
-newtype VarFrame = VarFrame [(HLValuable, Int)]
+newtype VarFrame = VarFrame [(HLValuable, Int, Int)]
     deriving (Show, Eq) 
 
 empty :: VarFrame
 empty = VarFrame []
 
-getList :: VarFrame -> [(HLValuable, Int)]
-getList (VarFrame xs) = xs
-
 frameSize :: VarFrame -> Int
-frameSize = foldr (+) 0 . fmap valueSize . (\(VarFrame xs) -> fmap fst xs)
+frameSize = foldr (+) 0 . fmap valueSize . (\(VarFrame xs) -> fmap (\(x,_,_) -> x) xs)
 
 buildFrame :: [HLValuable] -> VarFrame
-buildFrame xs = VarFrame $ zip xs (fmap (foldl (+) 0) . inits . fmap valueSize $ xs)
+buildFrame xs = VarFrame $ zipWith (\v o -> (v, o, valueSize v)) xs (fmap (foldl (+) 0) . inits . fmap valueSize $ xs)
 
 frameVars :: SyntaxTree -> [HLValuable]
 frameVars (Node el@(Frame _) [])    = []
@@ -65,8 +63,8 @@ findOffset :: StackFrame -> VariableName -> (Maybe Int)
 findOffset Root _                        = Nothing
 findOffset (Fluent parent) name          = findOffset parent name
 findOffset (StackFrame parent vars) name 
-    | (any predicate list) = fmap snd . find predicate $ list
-    | otherwise = fmap (+ frameSize vars) $ findOffset parent name
-    where list = getList vars
-          predicate ((Variable (n, _)), _) | n == name = True
+    | (any predicate list) = fmap (\(_, o, _) -> o) . find predicate $ list
+    | otherwise = fmap (+ frameSize vars) $ findOffset parent name -- -> change last commit
+    where list = (\(VarFrame xs) -> xs) vars
+          predicate ((Variable (n, _)), _, _) | n == name = True
           predicate _ = False
