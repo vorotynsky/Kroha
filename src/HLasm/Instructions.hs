@@ -70,8 +70,8 @@ instructions (Node ((AssemblyCall str       ), _, _, _) _ ) = Just [PureAsm str]
 instructions (Node ((Frame lbl              ), _, _, f) xs) =
     fmap (\x -> [BeginFrame f lbl] ++ x ++ [EndFrame f]) $ concatMapM instructions xs
 
-instructions (Node ((Assigment name (NameValue val)),    d, _, f) _) = Just [Move (findTarget f d name) (findTarget f d val)]
-instructions (Node ((Assigment name (IntegerValue val)), d, _, f) _) = Just [Move (findTarget f d name) (ConstantTarget val)]
+instructions (Node ((Assignment name (NameValue val)),    d, _, f) _) = Just [Move (findTarget f d name) (findTarget f d val)]
+instructions (Node ((Assignment name (IntegerValue val)), d, _, f) _) = Just [Move (findTarget f d name) (ConstantTarget val)]
 
 instructions (Node ((If lbl), _, _, _) []) = Just []
 instructions (Node ((If lbl), _, _, _) xs) =

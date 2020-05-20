@@ -33,7 +33,7 @@ elementToScope (While label)               = IntroduceLabel label
 elementToScope (DoWhile label)             = IntroduceLabel label
 elementToScope (Break _)                   = FluentScope
 elementToScope (Call _ _)                  = FluentScope
-elementToScope (Assigment _ _)             = FluentScope
+elementToScope (Assignment _ _)            = FluentScope
 elementToScope (AssemblyCall _)            = FluentScope
 
 data Scope = 

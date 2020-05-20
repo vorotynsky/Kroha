@@ -20,7 +20,7 @@ valueSize :: HLValuable -> Int
 valueSize (Variable (_, t)) = size t
     where size (Type _ (Just s)) = s
           {- TODO: add support or refactor in future (on adding errors to compiler) -}
-          size (Type _ Nothing)  = error "Unsupported types withoud specified size"
+          size (Type _ Nothing)  = error "Unsupported types without specified size"
 valueSize (Register (_, r)) = undefined
 
 newtype VarFrame = VarFrame [(HLValuable, Int, Int)]

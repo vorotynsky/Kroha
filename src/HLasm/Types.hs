@@ -33,11 +33,11 @@ literalType s (NameValue name) = lookupType name s
 literalType _ _ = undefined
 
 astCheck :: HLElement -> [VariableData] -> Bool
-astCheck (IfBranch (Just (Condition (left, _, righ)))) xs = fromMaybe False $
+astCheck (IfBranch (Just (Condition (left, _, right)))) xs = fromMaybe False $
     do leftType  <- literalType xs left
-       rightType <- literalType xs righ
+       rightType <- literalType xs right
        Just $ typeSuit leftType rightType
-astCheck (Assigment left right) xs = fromMaybe False $
+astCheck (Assignment left right) xs = fromMaybe False $
     do leftType  <- lookupType left xs
        rightType <- literalType xs right
        Just $ typeSuit leftType rightType

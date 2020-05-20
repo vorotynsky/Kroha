@@ -48,7 +48,7 @@ data HLElement =
     | DoWhile Label
     | Break Label
     | Call Label [VariableName]
-    | Assigment VariableName HLValue
+    | Assignment VariableName HLValue
     | AssemblyCall String
     deriving (Show, Eq)
 
@@ -56,10 +56,10 @@ usedVariables :: HLElement -> [VariableName]
 usedVariables (IfBranch (Just (Condition(left, _, right)))) = name left ++ name right
     where name (NameValue name) = [name]
           name _                = []
-usedVariables (Call _ xs)                        = xs
-usedVariables (Assigment left (NameValue right)) = [left, right]
-usedVariables (Assigment left _)                 = [left]
-usedVariables _                                  = []
+usedVariables (Call _ xs)                         = xs
+usedVariables (Assignment left (NameValue right)) = [left, right]
+usedVariables (Assignment left _)                 = [left]
+usedVariables _                                   = []
 
 usedLabels :: HLElement -> [Label]
 usedLabels (Break label)  = [label]

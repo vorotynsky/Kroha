@@ -16,17 +16,15 @@ newtype Parser a = Parser { runParser :: String -> Maybe (String, a) }
 
 instance Functor Parser where
     fmap f (Parser fp) = Parser $ \i ->
-        do
-        (input, a) <- fp i
-        Just (input, f a)
+        do (input, a) <- fp i
+           Just (input, f a)
 
 instance Applicative Parser where
     pure x = Parser (\i -> Just (i, x))
     (Parser fp) <*> (Parser pa) = Parser $ \i ->
-        do
-        (input, f) <- fp i
-        (input', x) <- pa input
-        Just (input', f x)
+        do (input, f) <- fp i
+           (input', x) <- pa input
+           Just (input', f x)
 
 instance Alternative Parser where
     empty = Parser $ \_ -> Nothing
@@ -34,9 +32,8 @@ instance Alternative Parser where
 
 instance Monad Parser where
     (Parser mp) >>= f = Parser $ \i ->
-        do
-        (input, v) <- mp i
-        runParser (f v) input
+        do (input, v) <- mp i
+           runParser (f v) input
 
 predicate :: (Char -> Bool) -> Parser Char
 predicate p = Parser f
@@ -93,7 +90,7 @@ variable = leafP id . aws $ curry (VariableDeclaration . Variable) <$> (string "
         where vtype = Type <$> name <*> (Just <$> braked nat)
 
 value = (IntegerValue <$> aws nat) <|> (StringValue <$> literal) <|> (NameValue <$> name)
-assigment = leafP id $ Assigment <$> name <*> (achar '=' *> value)
+assignment = leafP id $ Assignment <$> name <*> (achar '=' *> value)
 
 frame p = (\a b -> Node (Frame a) [b]) <$> fname <*> (block p)
     where fname = (ws *> string "frame") *> opt (braked name)
@@ -114,7 +111,7 @@ while p   = (\l b -> Node (While l) [b]) <$> whileHead <*> (block p)
 dowhile p = (\b l -> Node (DoWhile l) [b]) <$> (ws *> string "do" *> block p) <*> whileHead
 
 hlasm = reduce [ asmCall,       call,      HLasm.Parser.break,
-                 register,      variable,  assigment,
+                 register,      variable,  assignment,
                  frame hlasm,   ifstatment hlasm,
                  while hlasm,   dowhile    hlasm ]
     where reduce (x:xs) = foldl (<|>) x xs
