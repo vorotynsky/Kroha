@@ -29,10 +29,10 @@ data Target =
 data Instructions = 
     PureAsm String
     | BeginFrame StackFrame (Maybe Label)
-    | EndFrame StackFrame
+    | EndFrame StackFrame (Maybe Label)
     | Label Label
     | Move Target Target
-    | Call Label [Target]
+    | Call Label [Target] Int
     | Compare Target Target
     | Jump Label (Maybe CompareType)
     deriving (Show, Eq)
@@ -65,10 +65,12 @@ instructions (Node ((VariableDeclaration val), _, _, _) _ ) = Just []
 instructions (Node ((While lbl              ), _, _, _) xs) = loop lbl (concatMapM instructions xs)
 instructions (Node ((DoWhile lbl            ), _, _, _) xs) = loop lbl (concatMapM instructions xs)
 instructions (Node ((Break lbl              ), _, _, _) _ ) = Just [Jump (lbl ++ "end") Nothing]
-instructions (Node ((HLasm.Ast.Call lbl ns  ), d, _, f) _ ) = Just [HLasm.Instructions.Call lbl (fmap (findTarget f d) ns)]
+instructions (Node ((HLasm.Ast.Call lbl ns  ), d, _, f) _ ) = 
+    Just [HLasm.Instructions.Call lbl (fmap (findTarget f d) ns) size]
+    where size = foldl (+) 0 . fmap (\(VariableData (_, (VariableDeclaration d))) -> valueSize d) $ d 
 instructions (Node ((AssemblyCall str       ), _, _, _) _ ) = Just [PureAsm str]
 instructions (Node ((Frame lbl              ), _, _, f) xs) =
-    fmap (\x -> [BeginFrame f lbl] ++ x ++ [EndFrame f]) $ concatMapM instructions xs
+    fmap (\x -> [BeginFrame f lbl] ++ x ++ [EndFrame f lbl]) $ concatMapM instructions xs
 
 instructions (Node ((Assignment name (NameValue val)),    d, _, f) _) = Just [Move (findTarget f d name) (findTarget f d val)]
 instructions (Node ((Assignment name (IntegerValue val)), d, _, f) _) = Just [Move (findTarget f d name) (ConstantTarget val)]

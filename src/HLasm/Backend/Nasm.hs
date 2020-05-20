@@ -14,7 +14,7 @@ choosePtr = f . bytes
     where f 1 = "BYTE"
           f 2 = "WORD"
           f 4 = "DWORD"
-          f _ = error "undefined ptr size"
+          f n = error ("undefined data size: " ++ show n)
 
 target :: Target -> String
 target (NamedTarget name)           = name
@@ -35,8 +35,9 @@ frame f = ["push ebp", "mov ebp, esp", "sub esp, " ++ (show . size $ f)]
 instruction :: Instructions -> [String]
 instruction (PureAsm str)               = [str]
 instruction (BeginFrame f (Just l))     = (l ++ ":"):(frame f)
+instruction (EndFrame   f (Just _))     = ["leave", "ret"]
 instruction (BeginFrame f Nothing)      = frame f
-instruction (EndFrame f)                = ["leave", "ret"]
+instruction (EndFrame   f Nothing)      = ["leave"]
 instruction (Label l)                   = [l ++ ":"]
 instruction (Move l r)                  = [instr2arg "mov" l r]
 instruction (Compare l r)               = [instr2arg "cmp" l r]
@@ -45,7 +46,7 @@ instruction (Jump lbl (Just Equals))    = ["je " ++ lbl]
 instruction (Jump lbl (Just NotEquals)) = ["jne " ++ lbl]
 instruction (Jump lbl (Just Greater))   = ["jg " ++ lbl]
 instruction (Jump lbl (Just Less))      = ["jl " ++ lbl]
-instruction (Call lbl args)             = (fmap push . reverse $ args) ++ ["call " ++ lbl ++ "; HACK: stack doesn't align"] -- TOOD
+instruction (Call lbl args size)        = (fmap push . reverse $ args) ++ ["call " ++ lbl, "add esp, " ++ show (bytes size)]
     where push x = "push " ++ (target x)
 
 join :: String -> [String] -> String
