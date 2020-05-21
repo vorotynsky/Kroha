@@ -57,7 +57,7 @@ valuableTarget _ (IntegerValue v)        = ConstantTarget v
 valuableTarget (sf, vd) (NameValue name) = findTarget sf vd name
 
 loop :: Label -> Maybe (InstructionSet) -> Maybe (InstructionSet)
-loop lbl i = fmap (\x -> [Label (lbl ++ "begin")] ++ x ++ [Label (lbl ++ "end")]) $ i
+loop lbl i = let begin = lbl ++ "begin" in fmap (\x -> [Label begin] ++ x ++ [Jump begin Nothing, Label (lbl ++ "end")]) $ i
 
 instructions :: Tree (HLElement, [VariableData], [LabelData], StackFrame) -> Maybe (InstructionSet)
 instructions (Node ((InstructionSet         ), _, _, _) xs) = concatMapM instructions xs

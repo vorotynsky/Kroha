@@ -2,9 +2,7 @@
 
 module Main where
 
-import           Data.Tree (drawTree)
 import           System.Environment (getArgs)
-import           Control.Monad ((>=>))
 import           Control.Monad.Zip
 
 import           Funcs
