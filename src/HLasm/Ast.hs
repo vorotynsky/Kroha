@@ -33,7 +33,12 @@ data HLValue =
     NameValue VariableName
     | IntegerValue Int
     | StringValue String
-    deriving (Show, Eq)
+    deriving (Eq)
+
+instance Show HLValue where
+    show (NameValue   name) = name
+    show (IntegerValue num) = show num
+    show (StringValue  str) = show str
 
 data Condition = Condition (HLValue, CompareType, HLValue)
     deriving (Show, Eq)

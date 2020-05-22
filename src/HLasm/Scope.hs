@@ -13,7 +13,9 @@ module HLasm.Scope
 
 import           Control.Monad.Zip
 import           Data.Tree
+import           Data.Bifunctor
 import           HLasm.Ast
+import           HLasm.Error
 
 data ScopeData = FluentScope
     | IntroduceVariable HLValuable
@@ -67,24 +69,24 @@ fromScopeData s (Node (el, sd) xs) = Node (el, currScope) (fmap (fromScopeData c
 newtype VariableData = VariableData (VariableName, HLElement) deriving (Show)
 newtype LabelData    = LabelData    (Label,        HLElement) deriving (Show)
 
-findVar :: Scope -> VariableName -> Maybe VariableData
-findVar Root _ = Nothing
+findVar :: Scope -> VariableName -> Either VariableName VariableData
+findVar Root name = Left name
 findVar (Scope {scopeData = (IntroduceVariable var), scopeElement = el}) name | valuableName var == name =
-    Just $ VariableData (name, el)
+    Right $ VariableData (name, el)
 findVar (Scope {scopeParent = p}) name = findVar p name
 
-findLabel :: Scope -> VariableName -> Maybe LabelData
-findLabel Root _ = Nothing
+findLabel :: Scope -> Label -> Either Label LabelData
+findLabel Root label = Left label
 findLabel (Scope {scopeData = (IntroduceLabel lbl), scopeElement = el}) label | lbl == label =
-    Just $ LabelData (lbl, el)
+    Right $ LabelData (lbl, el)
 findLabel (Scope {scopeParent = p}) label = findLabel p label
 
 type SemanticTree = Tree (HLElement, [VariableData], [LabelData])
 
-semantic :: SyntaxTree -> Maybe SemanticTree
+semantic :: SyntaxTree -> Result SemanticTree
 semantic t = traverse process . fromScopeData Root $ mzip t (fmap elementToScope t)
     where used f u s = sequence . fmap (f s) . u
           process (el, scope) = do
-              vars <- used findVar usedVariables scope el
-              labels <- used findLabel usedLabels scope el
-              Just (el, vars, labels)
+              vars   <- first VariableNotFound $ used findVar usedVariables scope el
+              labels <- first LabelNotFound    $ used findLabel usedLabels scope el
+              Right (el, vars, labels)

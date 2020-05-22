@@ -5,6 +5,7 @@
 module HLasm.Parser (HLasm.Parser.parse) where
 
 import           HLasm.Ast
+import           HLasm.Error
 
 import           Data.Bifunctor     (first)
 import           Data.Maybe         (maybeToList)
@@ -85,5 +86,5 @@ hlasm = reduce [ asmCall,             call,           HLasm.Parser.break,
                  assignment ]
     where reduce (x:xs) = foldl (<|>) x xs
 
-parse :: String -> Either String SyntaxTree
-parse = first show . Text.Parsec.parse hlasm ""
+parse :: String -> Result SyntaxTree
+parse = first ParseError . Text.Parsec.parse hlasm ""

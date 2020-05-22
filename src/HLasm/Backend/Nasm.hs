@@ -55,4 +55,4 @@ join s [x]    = x
 join s (x:xs) = x ++ s ++ join s xs
 
 nasm :: BackEnd
-nasm = BackEnd (\x -> join "\n" . concat $ fmap instruction x)
+nasm = BackEnd (\x -> Right . join "\n" . concat $ fmap instruction x)

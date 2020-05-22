@@ -4,8 +4,10 @@ module HLasm.Types where
 
 import           Data.Maybe
 import           Data.Tree
+import           Data.Bifunctor
 import           HLasm.Ast
 import           HLasm.Scope
+import           HLasm.Error
 
 typeSuit :: Type -> Type -> Bool
 typeSuit (Type lname _) (Type rname _) | (lname /= rname) = False
@@ -32,18 +34,20 @@ literalType _ (IntegerValue x) = Just $ Type "int" (Just $ size x)
 literalType s (NameValue name) = lookupType name s
 literalType _ _ = undefined
 
-astCheck :: HLElement -> [VariableData] -> Bool
-astCheck (IfBranch (Just (Condition (left, _, right)))) xs = fromMaybe False $
-    do leftType  <- literalType xs left
-       rightType <- literalType xs right
-       Just $ typeSuit leftType rightType
-astCheck (Assignment left right) xs = fromMaybe False $
-    do leftType  <- lookupType left xs
-       rightType <- literalType xs right
-       Just $ typeSuit leftType rightType
-astCheck _ _ = True
+err a b = maybe (Left (a, b)) Right
 
-typeCheck :: SemanticTree -> Maybe SemanticTree
+astCheck :: HLElement -> [VariableData] -> Either (HLValue, HLValue) ()
+astCheck (IfBranch (Just (Condition (left, _, right)))) xs =
+    do leftType  <- err left right $ literalType xs left
+       rightType <- err left right $ literalType xs right
+       if typeSuit leftType rightType then Right () else err left right Nothing
+astCheck (Assignment left right) xs =
+    let error = err (NameValue left) right in
+    do leftType  <- error $ lookupType left xs
+       rightType <- error $ literalType xs right
+       if typeSuit leftType rightType then Right () else error Nothing
+astCheck _ _ = Right ()
+
+typeCheck :: SemanticTree -> Either Error SemanticTree
 typeCheck tree = traverse f tree
-    where f x@(elem, vars, _) = if astCheck elem vars then Just x else Nothing
-
+    where f x@(elem, vars, _) = bimap IncompatibleTypes (const x) $ astCheck elem vars

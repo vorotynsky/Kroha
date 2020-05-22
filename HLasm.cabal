@@ -1,10 +1,8 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.1.
+-- This file has been generated from package.yaml by hpack version 0.34.1.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: 6cca8ef12b48d6c2337ca3596a778423af51d8f48437da9bec4a4e2770142e12
 
 name:           HLasm
 version:        0.1.0.0
@@ -28,6 +26,7 @@ library
   exposed-modules:
       HLasm.Ast
       HLasm.Backend.Nasm
+      HLasm.Error
       HLasm.Frame
       HLasm.Instructions
       HLasm.Parser
