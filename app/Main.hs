@@ -16,7 +16,7 @@ import           HLasm.Backend.Nasm
 parseAll :: String -> String
 parseAll = get . pipeline
     where pipeline src = 
-            do parsed    <- err "Parse error" parse src
+            do parsed    <- parse src
                semantic  <- err "Scope error" semantic parsed
                _         <- err "Type error"  typeCheck semantic
                stack     <- Right $ (buildStackFrames Root) parsed

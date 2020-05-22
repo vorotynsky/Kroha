@@ -2,119 +2,88 @@
 
 {-# LANGUAGE FlexibleContexts #-}
 
-module HLasm.Parser(parse)  where
+module HLasm.Parser (HLasm.Parser.parse) where
 
 import           HLasm.Ast
 
-import           Control.Applicative
-import           Data.Char
-import           Data.List.NonEmpty
-import           Data.Maybe
-import           Data.Tree
+import           Data.Bifunctor     (first)
+import           Data.Maybe         (maybeToList)
+import           Data.Tree          (Tree (..), unfoldTreeM)
+import           Data.Tuple.Extra   (curry3)
+import           Text.Parsec
+import           Text.Parsec.String (Parser (..))
 
-newtype Parser a = Parser { runParser :: String -> Maybe (String, a) }
-
-instance Functor Parser where
-    fmap f (Parser fp) = Parser $ \i ->
-        do (input, a) <- fp i
-           Just (input, f a)
-
-instance Applicative Parser where
-    pure x = Parser (\i -> Just (i, x))
-    (Parser fp) <*> (Parser pa) = Parser $ \i ->
-        do (input, f) <- fp i
-           (input', x) <- pa input
-           Just (input', f x)
-
-instance Alternative Parser where
-    empty = Parser $ \_ -> Nothing
-    (Parser a) <|> (Parser b) = Parser $ \i -> a i <|> b i
-
-instance Monad Parser where
-    (Parser mp) >>= f = Parser $ \i ->
-        do (input, v) <- mp i
-           runParser (f v) input
-
-predicate :: (Char -> Bool) -> Parser Char
-predicate p = Parser f
-    where f []     = Nothing
-          f (x:xs) = if p x then Just (xs, x) else Nothing
-
-char :: Char -> Parser Char
-char c = predicate (== c)
-
-string :: String -> Parser String
-string = traverse char
-
-stepBy :: Parser s -> Parser a -> Parser [a]
-stepBy ps pa = (\l a -> l ++ [a]) <$> many (const <$> pa <*> ps) <*> pa
-
-ws :: Parser String
-ws = many (predicate isSpace)
-
-ws1 :: Parser String
-ws1 = some (predicate isSpace)
-
-between s1 s2 p = s1 *> p <* s2
-around s = between s s
-aws = around ws
-
-opt p = fmap Just p <|> pure Nothing
-
-nat :: Parser Int
-nat = read <$> some (predicate isDigit)
 
 treeParser :: (b -> Parser (a, [b])) -> Parser b -> Parser (Tree a)
 treeParser f p = p >>= unfoldTreeM f
 
 leafP f = treeParser (\x -> pure (f x, []))
 
---------- Parsing ---------
-achar   = aws . char
-astring = aws . string
+nat :: Parser Int
+nat = fmap read (many1 digit)
 
-name    = (aws . some) (predicate isAlpha)
-braked  = aws . (between (char '(') (char ')'))
-literal = aws (around (char '\"') (some $ predicate (/= '\"')))
+aparse :: Parser a -> Parser a
+aparse  = let spaces = many space in between spaces spaces
 
-instrSet p = ftree <$> treeParser internal (aws . many $ aws p)
-    where internal x     = pure (Node InstructionSet x, [])
-block p    = achar '{' *> instrSet p <* achar '}'
+achar   = aparse . char
+keyword word = aparse $ try (string word <* space)
 
-asmCall = leafP AssemblyCall (ws *> char '!' *> some (predicate (/= '\n')) <* char '\n')
-break   = leafP Break (astring "break" *> braked name)
-call    = leafP id $ Call <$> (ws *> string "call" *> name) <*> braked (stepBy (char ',') name)
+around :: Char -> Char -> Parser a -> Parser a
+around l r = between (achar l) (achar r)
 
-register = leafP id . aws $ curry (VariableDeclaration . Register) <$> (string "reg" *> name) <*> (achar '=' *> some (predicate isAlpha))
-variable = leafP id . aws $ curry (VariableDeclaration . Variable) <$> (string "var" *> name) <*> (achar ':' *> vtype)
-        where vtype = Type <$> name <*> (Just <$> braked nat)
+parens = around '(' ')'
+angles = around '<' '>'
+braces = around '{' '}'
 
-value = (IntegerValue <$> aws nat) <|> (StringValue <$> literal) <|> (NameValue <$> name)
-assignment = leafP id $ Assignment <$> name <*> (achar '=' *> value)
+name :: Parser String
+name = (:) <$> letter <*> many (alphaNum <|> char '_')
 
-frame p = (\a b -> Node (Frame a) [b]) <$> fname <*> (block p)
-    where fname = (ws *> string "frame") *> opt (braked name)
+break   = leafP Break        (keyword "break" *> parens name)
+asmCall = leafP AssemblyCall (spaces *> char '!' *> many1 (noneOf ";") <* char ';' <* spaces)
+call    = leafP id (Call <$> (keyword "call" *> angles name) <*> parens (name `sepBy` achar ','))
 
-condition = (\a c b -> Condition (a, c, b)) <$> value <*> cond <*> value
+register = leafP id . aparse $ curry (VariableDeclaration . Register) <$> (keyword "reg" *> name) <*> (achar ':' *> name )
+variable = leafP id . aparse $ curry (VariableDeclaration . Variable) <$> (keyword "var" *> name) <*> (achar ':' *> vtype)
+    where vtype = Type <$> name <*> (Just <$> parens nat)
+
+value = (IntegerValue <$> aparse nat) <|> (NameValue <$> aparse name)
+
+assignment = leafP id (Assignment <$> name <*> (achar '=' *> value))
+condition = curry3 Condition <$> value <*> cond <*> value
     where p x s = const x <$> string s
           cond = p Equals "=="  <|> p NotEquals "!=" <|> p Greater "<" <|> p Less ">"
 
-ifstatment p = (\(l, a) b c -> Node (If l) (a : b ++ maybeToList c)) <$> (ifblock >>= (\(l, e) -> (,) l <$> treefy (pure e))) <*> many (treefy elseif) <*> opt (treefy elseb)
-    where treefy el = (\a b -> Node a [b]) <$> el <*> (block p)
-          ifblock   = ((\(c, l) -> (l, IfBranch $ Just c)) <$> (astring "if" *> (braked $ (,) <$> (condition <* char ',') <*> name)))
-          elseif    = (IfBranch . Just) <$> (ws *> string "else" *> ws1 *> string "if" *> braked (aws condition))
-          elseb     = (const $ IfBranch Nothing) <$> (astring "else")
+instrSet p = ftree <$> treeParser internal (aparse . many $ aparse p)
+    where internal x = pure (Node InstructionSet x, [])
+block = braces . instrSet
 
+frame p = (\a b -> Node (Frame a) [b]) <$> fname <*> block p
+    where fname = (keyword "frame" *> optionMaybe (parens name))
 
-whileHead = ws *> string "while" *> braked name
-while p   = (\l b -> Node (While l) [b]) <$> whileHead <*> (block p)
-dowhile p = (\b l -> Node (DoWhile l) [b]) <$> (ws *> string "do" *> block p) <*> whileHead
+ifstatment p =
+    do (label, ifb) <- ifblock
+       elseifs <- many $ elseif
+       elseblk <- optionMaybe $ elseblk
+       return $ Node (If label) (ifb : elseifs ++ maybeToList elseblk)
+    where returnBlock cond = block p >>= return . Node (IfBranch cond) . pure
+          ifblock = do keyword "if"
+                       (condition, label) <- parens ((,) <$> condition <*> (achar ',' *> name))
+                       block <- returnBlock $ Just condition
+                       return $ (label, block)
+          elseif  = do keyword "else"; keyword "if"
+                       condition <- parens condition
+                       returnBlock $ Just condition
+          elseblk =    keyword "else" >>= const (returnBlock Nothing)
 
-hlasm = reduce [ asmCall,       call,      HLasm.Parser.break,
-                 register,      variable,  assignment,
-                 frame hlasm,   ifstatment hlasm,
-                 while hlasm,   dowhile    hlasm ]
+whileHead = keyword "while" *> parens name
+while p   = (\l b -> Node (While   l) [b]) <$> whileHead <*> (block p)
+dowhile p = (\b l -> Node (DoWhile l) [b]) <$> (spaces    *> string "do" *> block p) <*> whileHead
+
+hlasm = reduce [ asmCall,             call,           HLasm.Parser.break,
+                 register,            variable,       frame hlasm,
+                 ifstatment hlasm,    while hlasm,    dowhile hlasm, 
+                 assignment ]
     where reduce (x:xs) = foldl (<|>) x xs
 
-parse :: String -> Maybe SyntaxTree
-parse = fmap snd . runParser hlasm
+parse :: String -> Either String SyntaxTree
+parse = first show . Text.Parsec.parse hlasm ""
