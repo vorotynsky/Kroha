@@ -52,7 +52,7 @@ value = (IntegerValue <$> aparse nat) <|> (NameValue <$> aparse name)
 assignment = leafP id (Assignment <$> name <*> (achar '=' *> value))
 condition = curry3 Condition <$> value <*> cond <*> value
     where p x s = const x <$> string s
-          cond = p Equals "=="  <|> p NotEquals "!=" <|> p Greater "<" <|> p Less ">"
+          cond = p Equals "=="  <|> p NotEquals "!=" <|> p Greater ">" <|> p Less "<"
 
 instrSet p = ftree <$> treeParser internal (aparse . many $ aparse p)
     where internal x = pure (Node InstructionSet x, [])
@@ -71,7 +71,7 @@ ifstatment p =
                        (condition, label) <- parens ((,) <$> condition <*> (achar ',' *> name))
                        block <- returnBlock $ Just condition
                        return $ (label, block)
-          elseif  = do keyword "else"; keyword "if"
+          elseif  = do try (keyword "else" *> keyword "if")
                        condition <- parens condition
                        returnBlock $ Just condition
           elseblk =    keyword "else" >>= const (returnBlock Nothing)

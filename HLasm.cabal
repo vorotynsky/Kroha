@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           HLasm
-version:        0.1.0.0
+version:        0.2.0.0
 description:    Please see the README on GitHub at <https://github.com/vorotynsky/HLasm#readme>
 homepage:       https://github.com/vorotynsky/HLasm#readme
 bug-reports:    https://github.com/vorotynsky/HLasm/issues

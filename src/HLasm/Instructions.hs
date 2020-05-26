@@ -82,7 +82,7 @@ instructions (Node ((If lbl), _, _, _) []) = Right []
 instructions (Node ((If lbl), _, _, _) xs) =
     do (conds, bodies') <- Right $ traverse (uncurry branch) (zip [1..] xs)
        bodies           <- fmap (concat) . sequence $ bodies'
-       Right $ conds ++ bodies ++ [Label (lbl ++ "end")]
+       Right $ conds ++ [Jump (lbl ++ "end") Nothing] ++ bodies ++ [Label (lbl ++ "end")]
 
     where condition lbl pt (Condition (left, cmp, right)) =
               let find = valuableTarget pt in [Compare (find left) (find right), Jump lbl (Just cmp)]
