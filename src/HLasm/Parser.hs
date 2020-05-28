@@ -86,5 +86,9 @@ hlasm = reduce [ asmCall,             call,           HLasm.Parser.break,
                  assignment ]
     where reduce (x:xs) = foldl (<|>) x xs
 
+
+globals = frame hlasm <|> asmCallas
+program = (\a -> Node Program a) <$> (keyword "program" *> braces (many globals))
+
 parse :: String -> Result SyntaxTree
-parse = first ParseError . Text.Parsec.parse hlasm ""
+parse = first ParseError . Text.Parsec.parse program ""

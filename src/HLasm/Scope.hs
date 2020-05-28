@@ -25,6 +25,7 @@ data ScopeData = FluentScope
 type ScopeTree = Tree ScopeData
 
 elementToScope :: HLElement -> ScopeData
+elementToScope (Program)                   = FluentScope
 elementToScope (InstructionSet)            = FluentScope
 elementToScope (VariableDeclaration value) = IntroduceVariable value
 elementToScope (Frame (Just label))        = IntroduceLabel label
@@ -59,10 +60,13 @@ foldz g f a [x]    = [f a x]
 foldz g f a (x:xs) = elem : (foldz g f (g elem) xs)
     where elem = f a x
 
-fromScopeData :: Scope -> Tree (HLElement, ScopeData) -> Tree (HLElement, Scope)
-fromScopeData s t@(Node (el@InstructionSet, sd) xs@(_:_)) =  -- non-empty InstructionSet
+chainScope s (Node (el, sd) xs) = 
     Node (el, currScope) (foldz (\(Node (_,s) _) -> s) (fromScopeData) s xs)
         where currScope = Scope sd s el
+
+fromScopeData :: Scope -> Tree (HLElement, ScopeData) -> Tree (HLElement, Scope)
+fromScopeData s t@(Node (el@Program       , sd) xs@(_:_)) = chainScope s t
+fromScopeData s t@(Node (el@InstructionSet, sd) xs@(_:_)) = chainScope s t
 fromScopeData s (Node (el, sd) xs) = Node (el, currScope) (fmap (fromScopeData currScope) xs)
     where currScope = Scope sd s el
 

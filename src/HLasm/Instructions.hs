@@ -3,9 +3,11 @@
 module HLasm.Instructions
 ( Offset(..), Target(..), InstructionSet(..)
 , Instructions(..)
+, Section(..)
+, ObjProgram(..)
 , BackEnd(..)
 , runBackend
-, instructions
+, program
 ) where
 
 import           Control.Monad.Extra (concatMapM)
@@ -40,7 +42,12 @@ data Instructions =
 
 type InstructionSet = [Instructions]
 
-newtype BackEnd = BackEnd (InstructionSet -> Result String)
+data Section =
+    Text InstructionSet
+
+newtype ObjProgram = ObjProgram [Section]
+
+newtype BackEnd = BackEnd (ObjProgram -> Result String)
 runBackend (BackEnd f) x = f x
 
 
@@ -60,6 +67,7 @@ valuableTarget (sf, vd) (NameValue name) = findTarget sf vd name
 
 loop :: Label -> Result (InstructionSet) -> Result (InstructionSet)
 loop lbl i = let begin = lbl ++ "begin" in fmap (\x -> [Label begin] ++ x ++ [Jump begin Nothing, Label (lbl ++ "end")]) $ i
+
 
 instructions :: Tree (HLElement, [VariableData], [LabelData], StackFrame) -> Result (InstructionSet)
 instructions (Node ((InstructionSet         ), _, _, _) xs) = concatMapM instructions xs
@@ -83,9 +91,13 @@ instructions (Node ((If lbl), _, _, _) xs) =
     do (conds, bodies') <- Right $ traverse (uncurry branch) (zip [1..] xs)
        bodies           <- fmap (concat) . sequence $ bodies'
        Right $ conds ++ [Jump (lbl ++ "end") Nothing] ++ bodies ++ [Label (lbl ++ "end")]
-
     where condition lbl pt (Condition (left, cmp, right)) =
               let find = valuableTarget pt in [Compare (find left) (find right), Jump lbl (Just cmp)]
           wrapif i = fmap (\b -> [Label (lbl ++ show i)] ++ b ++ [Jump (lbl ++ "end") Nothing]) . concatMapM instructions
           branch i (Node ((IfBranch (Just cond)), d, _, f) xs) = (condition (lbl ++ show i) (f, d) cond, wrapif i xs)
           branch i (Node ((IfBranch Nothing),     _, _, _) xs) = ([Jump     (lbl ++ show i)    Nothing], wrapif i xs)
+
+
+program :: Tree (HLElement, [VariableData], [LabelData], StackFrame) -> Result ObjProgram
+program (Node ((Program), _, _, _) xs) = fmap (\i -> ObjProgram [Text i]) $ concatMapM instructions xs 
+program _ = undefined

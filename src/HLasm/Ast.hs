@@ -44,7 +44,8 @@ data Condition = Condition (HLValue, CompareType, HLValue)
     deriving (Show, Eq)
 
 data HLElement = 
-    InstructionSet
+    Program
+    | InstructionSet
     | VariableDeclaration HLValuable
     | Frame (Maybe Label)
     | If Label

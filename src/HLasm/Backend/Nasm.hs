@@ -3,8 +3,9 @@
 module HLasm.Backend.Nasm (nasm) where
 
 import           HLasm.Ast          (CompareType (..))
+import           HLasm.Error
 import           HLasm.Frame
-import           HLasm.Instructions
+import           HLasm.Instructions hiding (program)
 
 bytes :: Int -> Int
 bytes x = ceiling ((toEnum x) / 8)
@@ -54,5 +55,11 @@ join s []     = ""
 join s [x]    = x
 join s (x:xs) = x ++ s ++ join s xs
 
+section :: Section -> Result String
+section (Text x) = Right .  join "\n" . ((:) "section .text\n") . concat $ fmap instruction x
+
+program :: ObjProgram -> Result String
+program (ObjProgram sections) = fmap (join "\n\n") . traverse section $ sections
+
 nasm :: BackEnd
-nasm = BackEnd (\x -> Right . join "\n" . concat $ fmap instruction x)
+nasm = BackEnd program
