@@ -13,13 +13,18 @@ typeSuit :: Type -> Type -> Bool
 typeSuit (Type lname _) (Type rname _) | (lname /= rname) = False
 typeSuit (Type _ l) (Type _ r) = (fromMaybe maxBound l) >= (fromMaybe maxBound r)
 
+sysregs = ["ip", "sp", "bp", "si", "di", "cs", "ds", "ss", "es", "fs"]
+
 registerSize :: RegisterName -> Int
-registerSize (n:"l")     | elem n "abcd" = 8
-registerSize (n:"h")     | elem n "abcd" = 8
-registerSize (n:"x")     | elem n "abcd" = 16
-registerSize ('e':n:"x") | elem n "abcd" = 32
-registerSize ('r':n:"x") | elem n "abcd" = 64
-registerSize _                           = 0
+registerSize (n:"l")     | elem n "abcd"  = 8
+registerSize (n:"h")     | elem n "abcd"  = 8
+registerSize (n:"x")     | elem n "abcd"  = 16
+registerSize ('e':n:"x") | elem n "abcd"  = 32
+registerSize ('r':n:"x") | elem n "abcd"  = 64
+registerSize (x)         | elem x sysregs = 16
+registerSize ('e':x)     | elem x sysregs = 32
+registerSize ('r':x)     | elem x sysregs = 64
+registerSize _                            = 0
 
 getType :: HLElement -> Type
 getType (VariableDeclaration (Variable (_, t))) = t

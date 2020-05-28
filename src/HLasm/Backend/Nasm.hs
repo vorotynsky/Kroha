@@ -20,7 +20,7 @@ choosePtr = f . bytes
 target :: Target -> String
 target (NamedTarget name)           = name
 target (Register reg)               = reg
-target (FrameVar (offset, size, _)) = choosePtr size ++ " [ebp-" ++ (show $ bytes (offset + size)) ++ "]"
+target (FrameVar (offset, size, _)) = choosePtr size ++ " [bp-" ++ (show $ bytes (offset + size)) ++ "]"
 target (ConstantTarget const)       = show const
 
 instr2arg :: String -> Target -> Target -> String
@@ -31,7 +31,7 @@ size (Root)           = 0
 size (Fluent _)       = 0
 size (StackFrame _ x) = bytes $ frameSize x
 
-frame f = ["push ebp", "mov ebp, esp", "sub esp, " ++ (show . size $ f)]
+frame f = ["push bp", "mov bp, sp", "sub sp, " ++ (show . size $ f)]
 
 instruction :: Instructions -> [String]
 instruction (PureAsm str)               = [str]
@@ -47,7 +47,7 @@ instruction (Jump lbl (Just Equals))    = ["je " ++ lbl]
 instruction (Jump lbl (Just NotEquals)) = ["jne " ++ lbl]
 instruction (Jump lbl (Just Greater))   = ["jg " ++ lbl]
 instruction (Jump lbl (Just Less))      = ["jl " ++ lbl]
-instruction (Call lbl args size)        = (fmap push . reverse $ args) ++ ["call " ++ lbl, "add esp, " ++ show (bytes size)]
+instruction (Call lbl args size)        = (fmap push . reverse $ args) ++ ["call " ++ lbl, "add sp, " ++ show (bytes size)]
     where push x = "push " ++ (target x)
 
 join :: String -> [String] -> String
