@@ -43,9 +43,9 @@ break   = leafP Break        (keyword "break" *> parens name)
 asmCall = leafP AssemblyCall (spaces *> char '!' *> many1 (noneOf ";") <* char ';' <* spaces)
 call    = leafP id (Call <$> (keyword "call" *> angles name) <*> parens (name `sepBy` achar ','))
 
-register = leafP id . aparse $ curry (VariableDeclaration . Register) <$> (keyword "reg" *> name) <*> (achar ':' *> name )
-variable = leafP id . aparse $ curry (VariableDeclaration . Variable) <$> (keyword "var" *> name) <*> (achar ':' *> vtype)
-    where vtype = Type <$> name <*> (Just <$> parens nat)
+vtype = Type <$> name <*> (Just <$> parens nat)
+register = leafP id . aparse $ RegisterDeclaration <$> (keyword "reg" *> name) <*> (achar ':' *> name )
+variable = leafP id . aparse $ VariableDeclaration <$> (keyword "var" *> name) <*> (achar ':' *> vtype)
 
 value = (IntegerValue <$> aparse nat) <|> (NameValue <$> aparse name)
 
@@ -86,8 +86,11 @@ hlasm = reduce [ asmCall,             call,           HLasm.Parser.break,
                  assignment ]
     where reduce (x:xs) = foldl (<|>) x xs
 
+globalVariable word f = leafP id . aparse $ f <$> (keyword word *> name) <*> (achar ':' *> vtype) <*> (achar '=' *> value)
+constant = globalVariable "const" ConstVarDeclaration
+globvar  = globalVariable "var"   GlobalVarDeclaration
 
-globals = frame hlasm <|> asmCallas
+globals = frame hlasm <|> asmCall <|> constant <|> globvar
 program = (\a -> Node Program a) <$> (keyword "program" *> braces (many globals))
 
 parse :: String -> Result SyntaxTree

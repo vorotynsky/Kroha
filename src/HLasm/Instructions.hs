@@ -2,9 +2,8 @@
 
 module HLasm.Instructions
 ( Offset(..), Target(..), InstructionSet(..)
-, Instructions(..)
-, Section(..)
-, ObjProgram(..)
+, Instructions(..), Variable(..)
+, Section(..), ObjProgram(..)
 , BackEnd(..)
 , runBackend
 , program
@@ -42,8 +41,12 @@ data Instructions =
 
 type InstructionSet = [Instructions]
 
+data Variable = Variable VariableName Type HLValue
+
 data Section =
     Text InstructionSet
+    | Data [Variable]
+    | Constants [Variable]
 
 newtype ObjProgram = ObjProgram [Section]
 
@@ -52,11 +55,10 @@ runBackend (BackEnd f) x = f x
 
 
 target :: StackFrame -> VariableData -> Target
-target _ (VariableData (_, VariableDeclaration (HLasm.Ast.Register(_, reg)))) = HLasm.Instructions.Register reg
+target _ (VariableData (_, (RegisterDeclaration _ reg))) = HLasm.Instructions.Register reg
 target frame (VariableData (name, e)) = case findOffset frame name of
-    Just x  -> FrameVar (x, size e, name)
+    Just x  -> FrameVar (x, stackVarSize e, name)
     Nothing -> NamedTarget name
-    where size (VariableDeclaration v) = valueSize v
 
 findTarget :: StackFrame -> [VariableData] -> VariableName -> Target --  was a lot of checks, target garanteed be here.
 findTarget frame xs name = target frame . fromJust . find (\(VariableData (n, _)) -> n == name) $ xs
@@ -71,7 +73,6 @@ loop lbl i = let begin = lbl ++ "begin" in fmap (\x -> [Label begin] ++ x ++ [Ju
 
 instructions :: Tree (HLElement, [VariableData], [LabelData], StackFrame) -> Result (InstructionSet)
 instructions (Node ((InstructionSet         ), _, _, _) xs) = concatMapM instructions xs
-instructions (Node ((VariableDeclaration val), _, _, _) _ ) = Right []
 instructions (Node ((While lbl              ), _, _, _) xs) = loop lbl (concatMapM instructions xs)
 instructions (Node ((DoWhile lbl            ), _, _, _) xs) = loop lbl (concatMapM instructions xs)
 instructions (Node ((Break lbl              ), _, _, _) _ ) = Right [Jump (lbl ++ "end") Nothing]
@@ -79,12 +80,17 @@ instructions (Node ((AssemblyCall str       ), _, _, _) _ ) = Right [PureAsm str
 instructions (Node ((Frame lbl              ), _, _, f) xs) =
     (\body -> [BeginFrame f lbl] ++ body ++ [EndFrame f lbl]) <$> concatMapM instructions xs
 
+instructions (Node ((VariableDeclaration _ _  ), _, _, _) _ )  = Right []
+instructions (Node ((RegisterDeclaration _ _  ), _, _, _) _ )  = Right []
+instructions (Node ((GlobalVarDeclaration n _ _), _, _, _) _ ) = Left (GlobalVariableInFrame n)
+instructions (Node ((ConstVarDeclaration n _ _), _, _, _) _ )  = Left (GlobalVariableInFrame n)
+
 instructions (Node ((Assignment name (NameValue val)),    d, _, f) _) = Right [Move (findTarget f d name) (findTarget f d val)]
 instructions (Node ((Assignment name (IntegerValue val)), d, _, f) _) = Right [Move (findTarget f d name) (ConstantTarget val)]
 
 instructions (Node ((HLasm.Ast.Call lbl ns  ), d, _, f) _ ) = 
     Right [HLasm.Instructions.Call lbl (fmap (findTarget f d) ns) size]
-    where size = foldl (+) 0 . fmap (\(VariableData (_, (VariableDeclaration d))) -> valueSize d) $ d 
+    where size = foldl (+) 0 . fmap (\(VariableData (_, d)) -> stackVarSize d) $ d
 
 instructions (Node ((If lbl), _, _, _) []) = Right []
 instructions (Node ((If lbl), _, _, _) xs) =
@@ -98,6 +104,21 @@ instructions (Node ((If lbl), _, _, _) xs) =
           branch i (Node ((IfBranch Nothing),     _, _, _) xs) = ([Jump     (lbl ++ show i)    Nothing], wrapif i xs)
 
 
+dataFilter  (Node ((GlobalVarDeclaration n t v), _, _, _) _) = Just $ Variable n t v
+dataFilter  _                                                = Nothing
+constFilter (Node ((ConstVarDeclaration n t v), _, _, _) _)  = Just $ Variable n t v
+constFilter _                                                = Nothing
+
+varSection ctor f xs = Right . ctor . fmap fromJust . filter isJust . fmap f $ xs
+
+filterF :: [(a -> Maybe b)] -> (a -> Bool)
+filterF fs = foldl or (const True) . fmap ((.) (not . isJust)) $ fs
+    where or f g x = f x && g x
+
 program :: Tree (HLElement, [VariableData], [LabelData], StackFrame) -> Result ObjProgram
-program (Node ((Program), _, _, _) xs) = fmap (\i -> ObjProgram [Text i]) $ concatMapM instructions xs 
+program (Node ((Program), _, _, _) xs) = 
+    do text   <- concatMapM instructions . filter (filterF [dataFilter, constFilter]) $ xs
+       dat    <- varSection Data      dataFilter  xs
+       const  <- varSection Constants constFilter xs
+       Right $ ObjProgram [(Text text), dat, const]
 program _ = undefined

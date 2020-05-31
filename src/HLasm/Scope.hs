@@ -18,26 +18,29 @@ import           HLasm.Ast
 import           HLasm.Error
 
 data ScopeData = FluentScope
-    | IntroduceVariable HLValuable
+    | IntroduceVariable VariableName
     | IntroduceLabel Label
     deriving (Show, Eq)
 
 type ScopeTree = Tree ScopeData
 
 elementToScope :: HLElement -> ScopeData
-elementToScope (Program)                   = FluentScope
-elementToScope (InstructionSet)            = FluentScope
-elementToScope (VariableDeclaration value) = IntroduceVariable value
-elementToScope (Frame (Just label))        = IntroduceLabel label
-elementToScope (Frame Nothing)             = FluentScope
-elementToScope (If label)                  = IntroduceLabel label
-elementToScope (IfBranch _)                = FluentScope
-elementToScope (While label)               = IntroduceLabel label
-elementToScope (DoWhile label)             = IntroduceLabel label
-elementToScope (Break _)                   = FluentScope
-elementToScope (Call _ _)                  = FluentScope
-elementToScope (Assignment _ _)            = FluentScope
-elementToScope (AssemblyCall _)            = FluentScope
+elementToScope (Program)                      = FluentScope
+elementToScope (InstructionSet)               = FluentScope
+elementToScope (VariableDeclaration var _)    = IntroduceVariable var
+elementToScope (RegisterDeclaration var _)    = IntroduceVariable var
+elementToScope (GlobalVarDeclaration var _ _) = IntroduceVariable var
+elementToScope (ConstVarDeclaration var _ _)  = IntroduceVariable var
+elementToScope (Frame (Just label))           = IntroduceLabel label
+elementToScope (Frame Nothing)                = FluentScope
+elementToScope (If label)                     = IntroduceLabel label
+elementToScope (IfBranch _)                   = FluentScope
+elementToScope (While label)                  = IntroduceLabel label
+elementToScope (DoWhile label)                = IntroduceLabel label
+elementToScope (Break _)                      = FluentScope
+elementToScope (Call _ _)                     = FluentScope
+elementToScope (Assignment _ _)               = FluentScope
+elementToScope (AssemblyCall _)               = FluentScope
 
 data Scope = 
     Root
@@ -75,8 +78,8 @@ newtype LabelData    = LabelData    (Label,        HLElement) deriving (Show)
 
 findVar :: Scope -> VariableName -> Either VariableName VariableData
 findVar Root name = Left name
-findVar (Scope {scopeData = (IntroduceVariable var), scopeElement = el}) name | valuableName var == name =
-    Right $ VariableData (name, el)
+findVar (Scope {scopeData = (IntroduceVariable var), scopeElement = el}) name | var == name =
+    Right $ VariableData (var, el)
 findVar (Scope {scopeParent = p}) name = findVar p name
 
 findLabel :: Scope -> Label -> Either Label LabelData

@@ -2,7 +2,9 @@
 
 module HLasm.Backend.Nasm (nasm) where
 
-import           HLasm.Ast          (CompareType (..))
+import           Data.Char
+
+import           HLasm.Ast          (CompareType (..), Type(..))
 import           HLasm.Error
 import           HLasm.Frame
 import           HLasm.Instructions hiding (program)
@@ -10,17 +12,29 @@ import           HLasm.Instructions hiding (program)
 bytes :: Int -> Int
 bytes x = ceiling ((toEnum x) / 8)
 
-choosePtr :: Int -> String
-choosePtr = f . bytes
-    where f 1 = "BYTE"
-          f 2 = "WORD"
-          f 4 = "DWORD"
+data DataType = Byte | Word | Dword
+    deriving (Show, Eq)
+
+uname = fmap toUpper . show
+
+dname Byte  = "DB"
+dname Word  = "DW"
+dname Dword = "DD"
+
+datatype :: Int -> DataType
+datatype = f . bytes
+    where f 1 = Byte
+          f 2 = Word
+          f 4 = Dword
           f n = error ("undefined data size: " ++ show n)
+
+toDatatype :: Type -> DataType
+toDatatype = let size (Type _ (Just s)) = s in datatype . size
 
 target :: Target -> String
 target (NamedTarget name)           = name
 target (Register reg)               = reg
-target (FrameVar (offset, size, _)) = choosePtr size ++ " [bp-" ++ (show $ bytes (offset + size)) ++ "]"
+target (FrameVar (offset, size, _)) = (uname . datatype) size ++ " [bp-" ++ (show $ bytes (offset + size)) ++ "]"
 target (ConstantTarget const)       = show const
 
 instr2arg :: String -> Target -> Target -> String
@@ -50,13 +64,20 @@ instruction (Jump lbl (Just Less))      = ["jl " ++ lbl]
 instruction (Call lbl args size)        = (fmap push . reverse $ args) ++ ["call " ++ lbl, "add sp, " ++ show (bytes size)]
     where push x = "push " ++ (target x)
 
+variable :: Variable -> String
+variable (Variable n t v)= n ++ ": " ++ (dname . toDatatype) t ++ " " ++ show v
+
 join :: String -> [String] -> String
 join s []     = ""
 join s [x]    = x
 join s (x:xs) = x ++ s ++ join s xs
 
+sectionHeader header = Right .  join "\n" . ((:) ("section ." ++ header))
+
 section :: Section -> Result String
-section (Text x) = Right .  join "\n" . ((:) "section .text\n") . concat $ fmap instruction x
+section (Text x)      = sectionHeader "text\n" . concat $ fmap instruction x
+section (Data x)      = sectionHeader "data"          $ fmap variable x
+section (Constants x) = sectionHeader "rodata"        $ fmap variable x
 
 program :: ObjProgram -> Result String
 program (ObjProgram sections) = fmap (join "\n\n") . traverse section $ sections

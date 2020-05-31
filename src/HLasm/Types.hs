@@ -27,8 +27,10 @@ registerSize ('r':x)     | elem x sysregs = 64
 registerSize _                            = 0
 
 getType :: HLElement -> Type
-getType (VariableDeclaration (Variable (_, t))) = t
-getType (VariableDeclaration (Register (_, r))) = Type "int" (Just (registerSize r))
+getType (VariableDeclaration _ t)    = t
+getType (ConstVarDeclaration _ t _)  = t
+getType (GlobalVarDeclaration _ t _) = t
+getType (RegisterDeclaration _ r)    = Type "int" (Just (registerSize r))
 
 lookupType :: VariableName -> [VariableData] -> Maybe Type
 lookupType name = fmap getType . lookup name . fmap (\(VariableData x) -> x)
