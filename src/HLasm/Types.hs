@@ -10,6 +10,8 @@ import           HLasm.Scope
 import           HLasm.Error
 
 typeSuit :: Type -> Type -> Bool
+typeSuit (Type "any" _) _ = True
+typeSuit _ (Type "any" _) = True
 typeSuit (Type lname _) (Type rname _) | (lname /= rname) = False
 typeSuit (Type _ l) (Type _ r) = (fromMaybe maxBound l) >= (fromMaybe maxBound r)
 
@@ -31,6 +33,7 @@ getType (VariableDeclaration _ t)    = t
 getType (ConstVarDeclaration _ t _)  = t
 getType (GlobalVarDeclaration _ t _) = t
 getType (RegisterDeclaration _ r)    = Type "int" (Just (registerSize r))
+getType (FakeVariable _)             = Type "any" Nothing
 
 lookupType :: VariableName -> [VariableData] -> Maybe Type
 lookupType name = fmap getType . lookup name . fmap (\(VariableData x) -> x)

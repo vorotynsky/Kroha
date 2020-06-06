@@ -42,6 +42,8 @@ data HLElement =
     | VariableDeclaration  VariableName Type
     | GlobalVarDeclaration VariableName Type HLValue
     | ConstVarDeclaration  VariableName Type HLValue
+    | FakeVariable         VariableName
+    | FakeFrame            Label
     | Frame (Maybe Label)
     | If Label
     | IfBranch (Maybe Condition)

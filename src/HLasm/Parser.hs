@@ -78,7 +78,7 @@ ifstatment p =
 
 whileHead = keyword "while" *> parens name
 while p   = (\l b -> Node (While   l) [b]) <$> whileHead <*> (block p)
-dowhile p = (\b l -> Node (DoWhile l) [b]) <$> (spaces    *> string "do" *> block p) <*> whileHead
+dowhile p = (\b l -> Node (DoWhile l) [b]) <$> (spaces *> keyword "do" *> block p) <*> whileHead
 
 hlasm = reduce [ asmCall,             call,           HLasm.Parser.break,
                  register,            variable,       frame hlasm,
@@ -90,7 +90,12 @@ globalVariable word f = leafP id . aparse $ f <$> (keyword word *> name) <*> (ac
 constant = globalVariable "const" ConstVarDeclaration
 globvar  = globalVariable "var"   GlobalVarDeclaration
 
-globals = frame hlasm <|> asmCall <|> constant <|> globvar
+declare = keyword "fake" *> (var <|> label)
+    where var   = leafP FakeVariable (keyword "var"   *> angles name <* spaces)
+          label = leafP FakeFrame    (keyword "frame" *> angles name <* spaces)
+
+
+globals = frame hlasm <|> asmCall <|> constant <|> globvar <|> declare
 program = (\a -> Node Program a) <$> (keyword "program" *> braces (many globals))
 
 parse :: String -> Result SyntaxTree

@@ -70,8 +70,16 @@ valuableTarget (sf, vd) (NameValue name) = findTarget sf vd name
 loop :: Label -> Result (InstructionSet) -> Result (InstructionSet)
 loop lbl i = let begin = lbl ++ "begin" in fmap (\x -> [Label begin] ++ x ++ [Jump begin Nothing, Label (lbl ++ "end")]) $ i
 
+isEmptyInstruction :: HLElement -> Bool
+isEmptyInstruction (FakeVariable _)       = True
+isEmptyInstruction (FakeFrame _)          = True
+isEmptyInstruction (VariableDeclaration _ _) = True
+isEmptyInstruction (RegisterDeclaration _ _) = True
+isEmptyInstruction _                         = False
+
 
 instructions :: Tree (HLElement, [VariableData], [LabelData], StackFrame) -> Result (InstructionSet)
+instructions (Node (el, _, _, _) _) | isEmptyInstruction el = Right []
 instructions (Node ((InstructionSet         ), _, _, _) xs) = concatMapM instructions xs
 instructions (Node ((While lbl              ), _, _, _) xs) = loop lbl (concatMapM instructions xs)
 instructions (Node ((DoWhile lbl            ), _, _, _) xs) = loop lbl (concatMapM instructions xs)
@@ -80,8 +88,6 @@ instructions (Node ((AssemblyCall str       ), _, _, _) _ ) = Right [PureAsm str
 instructions (Node ((Frame lbl              ), _, _, f) xs) =
     (\body -> [BeginFrame f lbl] ++ body ++ [EndFrame f lbl]) <$> concatMapM instructions xs
 
-instructions (Node ((VariableDeclaration _ _  ), _, _, _) _ )  = Right []
-instructions (Node ((RegisterDeclaration _ _  ), _, _, _) _ )  = Right []
 instructions (Node ((GlobalVarDeclaration n _ _), _, _, _) _ ) = Left (GlobalVariableInFrame n)
 instructions (Node ((ConstVarDeclaration n _ _), _, _, _) _ )  = Left (GlobalVariableInFrame n)
 
