@@ -11,7 +11,7 @@ import           HLasm.Parser
 import           HLasm.Scope (semantic)
 import           HLasm.Types (typeCheck)
 import           HLasm.Frame (StackFrame(Root), buildStackFrames)
-import           HLasm.Instructions (instructions, BackEnd(..), runBackend)
+import           HLasm.Instructions (program, BackEnd(..), runBackend)
 import           HLasm.Backend.Nasm
 
 parseAll :: String -> String
@@ -22,8 +22,8 @@ parseAll = get . first show . pipeline
                _        <- typeCheck semantic
                stack    <- Right $ (buildStackFrames Root) parsed
                tree     <- Right $ mzipWith (\(e, v, l) (_, sf) -> (e, v, l, sf)) semantic stack 
-               instructions <- instructions tree
-               runBackend nasm instructions
+               objProg  <- program tree
+               runBackend nasm objProg
 
 main :: IO ()
 main = do

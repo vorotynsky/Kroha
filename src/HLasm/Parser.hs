@@ -43,9 +43,9 @@ break   = leafP Break        (keyword "break" *> parens name)
 asmCall = leafP AssemblyCall (spaces *> char '!' *> many1 (noneOf ";") <* char ';' <* spaces)
 call    = leafP id (Call <$> (keyword "call" *> angles name) <*> parens (name `sepBy` achar ','))
 
-register = leafP id . aparse $ curry (VariableDeclaration . Register) <$> (keyword "reg" *> name) <*> (achar ':' *> name )
-variable = leafP id . aparse $ curry (VariableDeclaration . Variable) <$> (keyword "var" *> name) <*> (achar ':' *> vtype)
-    where vtype = Type <$> name <*> (Just <$> parens nat)
+vtype = Type <$> name <*> (Just <$> parens nat)
+register = leafP id . aparse $ RegisterDeclaration <$> (keyword "reg" *> name) <*> (achar ':' *> name )
+variable = leafP id . aparse $ VariableDeclaration <$> (keyword "var" *> name) <*> (achar ':' *> vtype)
 
 value = (IntegerValue <$> aparse nat) <|> (NameValue <$> aparse name)
 
@@ -78,7 +78,7 @@ ifstatment p =
 
 whileHead = keyword "while" *> parens name
 while p   = (\l b -> Node (While   l) [b]) <$> whileHead <*> (block p)
-dowhile p = (\b l -> Node (DoWhile l) [b]) <$> (spaces    *> string "do" *> block p) <*> whileHead
+dowhile p = (\b l -> Node (DoWhile l) [b]) <$> (spaces *> keyword "do" *> block p) <*> whileHead
 
 hlasm = reduce [ asmCall,             call,           HLasm.Parser.break,
                  register,            variable,       frame hlasm,
@@ -86,5 +86,17 @@ hlasm = reduce [ asmCall,             call,           HLasm.Parser.break,
                  assignment ]
     where reduce (x:xs) = foldl (<|>) x xs
 
+globalVariable word f = leafP id . aparse $ f <$> (keyword word *> name) <*> (achar ':' *> vtype) <*> (achar '=' *> value)
+constant = globalVariable "const" ConstVarDeclaration
+globvar  = globalVariable "var"   GlobalVarDeclaration
+
+declare = keyword "fake" *> (var <|> label)
+    where var   = leafP FakeVariable (keyword "var"   *> angles name <* spaces)
+          label = leafP FakeFrame    (keyword "frame" *> angles name <* spaces)
+
+
+globals = frame hlasm <|> asmCall <|> constant <|> globvar <|> declare
+program = (\a -> Node Program a) <$> (keyword "program" *> braces (many globals))
+
 parse :: String -> Result SyntaxTree
-parse = first ParseError . Text.Parsec.parse hlasm ""
+parse = first ParseError . Text.Parsec.parse program ""

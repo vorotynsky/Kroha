@@ -3,6 +3,7 @@
 module HLasm.Ast where
 
 import Data.Tree
+import Data.Maybe
 
 data Type = Type
     { typeName :: String
@@ -20,15 +21,6 @@ data CompareType =
     | Less
     deriving (Show, Eq)
 
-data HLValuable = 
-    Variable (VariableName, Type)
-    | Register (VariableName, RegisterName)
-    deriving (Show, Eq)
-
-valuableName :: HLValuable -> VariableName
-valuableName (Variable (name, _)) = name
-valuableName (Register (name, _)) = name
-
 data HLValue = 
     NameValue VariableName
     | IntegerValue Int
@@ -44,8 +36,14 @@ data Condition = Condition (HLValue, CompareType, HLValue)
     deriving (Show, Eq)
 
 data HLElement = 
-    InstructionSet
-    | VariableDeclaration HLValuable
+    Program
+    | InstructionSet
+    | RegisterDeclaration  VariableName RegisterName
+    | VariableDeclaration  VariableName Type
+    | GlobalVarDeclaration VariableName Type HLValue
+    | ConstVarDeclaration  VariableName Type HLValue
+    | FakeVariable         VariableName
+    | FakeFrame            Label
     | Frame (Maybe Label)
     | If Label
     | IfBranch (Maybe Condition)
@@ -56,6 +54,19 @@ data HLElement =
     | Assignment VariableName HLValue
     | AssemblyCall String
     deriving (Show, Eq)
+
+getValuableName :: HLElement -> Maybe VariableName
+getValuableName (VariableDeclaration  name _  ) = Just name
+getValuableName (RegisterDeclaration  name _  ) = Just name
+getValuableName (GlobalVarDeclaration name _ _) = Just name
+getValuableName (ConstVarDeclaration  name _ _) = Just name
+getValuableName _                               = Nothing
+
+isVariable :: HLElement -> Bool
+isVariable = isJust . getValuableName
+
+variableName :: HLElement -> VariableName
+variableName = fromJust . getValuableName
 
 usedVariables :: HLElement -> [VariableName]
 usedVariables (IfBranch (Just (Condition(left, _, right)))) = name left ++ name right

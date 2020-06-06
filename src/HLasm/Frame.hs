@@ -2,7 +2,7 @@
 
 module HLasm.Frame
 ( VarFrame(..)
-, valueSize
+, stackVarSize
 , frameSize
 , buildFrame
 , buildFrameTree
@@ -16,29 +16,32 @@ import           Data.Tree
 import           HLasm.Ast
 import           HLasm.Scope hiding (Scope(Root))
 
-valueSize :: HLValuable -> Int
-valueSize (Variable (_, t)) = size t
-    where size (Type _ (Just s)) = s
-          {- TODO: add support or refactor in future (on adding errors to compiler) -}
-          size (Type _ Nothing)  = error "Unsupported types without specified size"
-valueSize (Register (_, r)) = undefined
+size (Type _ (Just s)) = s
+{- TODO: add support or refactor in future (on adding errors to compiler) -}
+size (Type _ Nothing)  = error "Unsupported types without specified size"
 
-newtype VarFrame = VarFrame [(HLValuable, Int, Int)]
+stackVarSize :: HLElement -> Int
+stackVarSize (VariableDeclaration  _ t  ) = size t
+stackVarSize (GlobalVarDeclaration _ t _) = size t
+stackVarSize (ConstVarDeclaration  _ t _) = size t
+stackVarSize (RegisterDeclaration  _ r  ) = 0
+
+newtype VarFrame = VarFrame [(HLElement, Int, Int)]
     deriving (Show, Eq) 
 
 empty :: VarFrame
 empty = VarFrame []
 
 frameSize :: VarFrame -> Int
-frameSize = foldr (+) 0 . fmap valueSize . (\(VarFrame xs) -> fmap (\(x,_,_) -> x) xs)
+frameSize = foldr (+) 0 . fmap stackVarSize . (\(VarFrame xs) -> fmap (\(x,_,_) -> x) xs)
 
-buildFrame :: [HLValuable] -> VarFrame
-buildFrame xs = VarFrame $ zipWith (\v o -> (v, o, valueSize v)) xs (fmap (foldl (+) 0) . inits . fmap valueSize $ xs)
+buildFrame :: [HLElement] -> VarFrame
+buildFrame xs = VarFrame $ zipWith (\v o -> (v, o, stackVarSize v)) xs (fmap (foldl (+) 0) . inits . fmap stackVarSize $ xs)
 
-frameVars :: SyntaxTree -> [HLValuable]
+frameVars :: SyntaxTree -> [HLElement]
 frameVars (Node el@(Frame _) [])    = []
 frameVars (Node el@(Frame _) (x:_)) = frameVars x
-    where frameVars (Node (VariableDeclaration val@(Variable _)) xs) = [val] ++ (concatMap frameVars xs)
+    where frameVars (Node val xs) | isVariable val = [val] ++ (concatMap frameVars xs)
           frameVars (Node el@(Frame _) _) = []
           frameVars (Node _ xs) = concatMap frameVars xs
 
@@ -66,5 +69,5 @@ findOffset (StackFrame parent vars) name
     | (any predicate list) = fmap (\(_, o, _) -> o) . find predicate $ list
     | otherwise = fmap (+ frameSize vars) $ findOffset parent name -- -> change last commit
     where list = (\(VarFrame xs) -> xs) vars
-          predicate ((Variable (n, _)), _, _) | n == name = True
+          predicate (el, _, _) | isVariable el && (variableName el) == name = True
           predicate _ = False
