@@ -10,7 +10,7 @@ data Error =
     | ParseError Text.Parsec.ParseError
     | VariableNotFound VariableName
     | LabelNotFound Label
-    | IncompatibleTypes (HLValue, HLValue)
+    | IncompatibleTypes (RValue, RValue)
     | GlobalVariableInFrame VariableName
     deriving (Eq)
 

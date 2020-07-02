@@ -41,7 +41,7 @@ data Instructions =
 
 type InstructionSet = [Instructions]
 
-data Variable = Variable VariableName Type HLValue
+data Variable = Variable VariableName Type RValue
 
 data Section =
     Text InstructionSet
@@ -63,20 +63,23 @@ target frame (VariableData (name, e)) = case findOffset frame name of
 findTarget :: StackFrame -> [VariableData] -> VariableName -> Target --  was a lot of checks, target garanteed be here.
 findTarget frame xs name = target frame . fromJust . find (\(VariableData (n, _)) -> n == name) $ xs
 
-valuableTarget :: (StackFrame, [VariableData]) -> HLValue -> Target
+valuableTarget :: (StackFrame, [VariableData]) -> RValue -> Target
 valuableTarget _        (IntegerValue v) = ConstantTarget v
-valuableTarget (sf, vd) (NameValue name) = findTarget sf vd name
+valuableTarget (sf, vd) (LeftValue(NameValue name))     = findTarget sf vd name
 
 loop :: Label -> Result (InstructionSet) -> Result (InstructionSet)
 loop lbl i = let begin = lbl ++ "begin" in fmap (\x -> [Label begin] ++ x ++ [Jump begin Nothing, Label (lbl ++ "end")]) $ i
 
 isEmptyInstruction :: HLElement -> Bool
-isEmptyInstruction (FakeVariable _)       = True
-isEmptyInstruction (FakeFrame _)          = True
+isEmptyInstruction (FakeVariable _)          = True
+isEmptyInstruction (FakeFrame _)             = True
 isEmptyInstruction (VariableDeclaration _ _) = True
 isEmptyInstruction (RegisterDeclaration _ _) = True
 isEmptyInstruction _                         = False
 
+rval2target :: RValue -> StackFrame -> [VariableData] -> Target
+rval2target (IntegerValue val)               _ _ = ConstantTarget val
+rval2target (LeftValue (NameValue     name)) s d = findTarget s d name
 
 instructions :: Tree (HLElement, [VariableData], [LabelData], StackFrame) -> Result (InstructionSet)
 instructions (Node (el, _, _, _) _) | isEmptyInstruction el = Right []
@@ -91,11 +94,11 @@ instructions (Node ((Frame lbl              ), _, _, f) xs) =
 instructions (Node ((GlobalVarDeclaration n _ _), _, _, _) _ ) = Left (GlobalVariableInFrame n)
 instructions (Node ((ConstVarDeclaration n _ _), _, _, _) _ )  = Left (GlobalVariableInFrame n)
 
-instructions (Node ((Assignment name (NameValue val)),    d, _, f) _) = Right [Move (findTarget f d name) (findTarget f d val)]
-instructions (Node ((Assignment name (IntegerValue val)), d, _, f) _) = Right [Move (findTarget f d name) (ConstantTarget val)]
+instructions (Node ((Assignment left right), d, _, f) _) 
+    = Right [Move (rval2target (LeftValue left) f d) (rval2target right f d)]
 
 instructions (Node ((HLasm.Ast.Call lbl ns  ), d, _, f) _ ) = 
-    Right [HLasm.Instructions.Call lbl (fmap (findTarget f d) ns) size]
+    Right [HLasm.Instructions.Call lbl (fmap (\n -> rval2target n f d) ns) size]
     where size = foldl (+) 0 . fmap (\(VariableData (_, d)) -> stackVarSize d) $ d
 
 instructions (Node ((If lbl), _, _, _) []) = Right []

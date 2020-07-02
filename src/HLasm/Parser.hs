@@ -39,18 +39,19 @@ braces = around '{' '}'
 name :: Parser String
 name = (:) <$> letter <*> many (alphaNum <|> char '_')
 
+lvalue = NameValue <$> aparse name
+rvalue = (IntegerValue <$> aparse nat) <|> (LeftValue <$> lvalue)
+
 break   = leafP Break        (keyword "break" *> parens name)
 asmCall = leafP AssemblyCall (spaces *> char '!' *> many1 (noneOf ";") <* char ';' <* spaces)
-call    = leafP id (Call <$> (keyword "call" *> angles name) <*> parens (name `sepBy` achar ','))
+call    = leafP id (Call <$> (keyword "call" *> angles name) <*> parens (rvalue `sepBy` achar ','))
 
 vtype = Type <$> name <*> (Just <$> parens nat)
 register = leafP id . aparse $ RegisterDeclaration <$> (keyword "reg" *> name) <*> (achar ':' *> name )
 variable = leafP id . aparse $ VariableDeclaration <$> (keyword "var" *> name) <*> (achar ':' *> vtype)
 
-value = (IntegerValue <$> aparse nat) <|> (NameValue <$> aparse name)
-
-assignment = leafP id (Assignment <$> name <*> (achar '=' *> value))
-condition = curry3 Condition <$> value <*> cond <*> value
+assignment = leafP id (Assignment <$> lvalue <*> (achar '=' *> rvalue))
+condition = curry3 Condition <$> rvalue <*> cond <*> rvalue
     where p x s = const x <$> string s
           cond = p Equals "=="  <|> p NotEquals "!=" <|> p Greater ">" <|> p Less "<"
 
@@ -86,7 +87,7 @@ hlasm = reduce [ asmCall,             call,           HLasm.Parser.break,
                  assignment ]
     where reduce (x:xs) = foldl (<|>) x xs
 
-globalVariable word f = leafP id . aparse $ f <$> (keyword word *> name) <*> (achar ':' *> vtype) <*> (achar '=' *> value)
+globalVariable word f = leafP id . aparse $ f <$> (keyword word *> name) <*> (achar ':' *> vtype) <*> (achar '=' *> rvalue)
 constant = globalVariable "const" ConstVarDeclaration
 globvar  = globalVariable "var"   GlobalVarDeclaration
 
