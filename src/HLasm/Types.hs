@@ -44,6 +44,7 @@ literalType :: [VariableData] -> RValue -> Maybe Type
 literalType _ (IntegerValue x) = Just $ Type "int" (Just $ size x)
     where size = ceiling . (\x -> log (x + 1) / log 2) . toEnum
 literalType s (LeftValue (NameValue     name)) = lookupType name s
+literalType s (LeftValue (RegisterValue name)) = Just $ registerType name
 
 err a b = maybe (Left (a, b)) Right
 

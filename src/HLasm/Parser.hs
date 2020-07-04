@@ -39,8 +39,10 @@ braces = around '{' '}'
 name :: Parser String
 name = (:) <$> letter <*> many (alphaNum <|> char '_')
 
-lvalue = NameValue <$> aparse name
-rvalue = (IntegerValue <$> aparse nat) <|> (LeftValue <$> lvalue)
+lvalue' = ((RegisterValue <$> (char '%' *> name)) <|> (NameValue <$> name))
+lvalue = aparse lvalue'
+rvalue' = (IntegerValue <$> nat) <|> (LeftValue <$> lvalue')
+rvalue = aparse rvalue'
 
 break   = leafP Break        (keyword "break" *> parens name)
 asmCall = leafP AssemblyCall (spaces *> char '!' *> many1 (noneOf ";") <* char ';' <* spaces)

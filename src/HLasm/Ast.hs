@@ -23,6 +23,7 @@ data CompareType =
 
 data LValue =
     NameValue VariableName
+    | RegisterValue RegisterName
     deriving (Eq)
 
 data RValue =
@@ -32,6 +33,7 @@ data RValue =
 
 instance Show LValue where
     show (NameValue     name) = name
+    show (RegisterValue name) = '%':name
 
 instance Show RValue where
     show (LeftValue  value) = show value
@@ -60,6 +62,7 @@ data HLElement =
     | AssemblyCall String
     deriving (Show, Eq)
 
+
 getValuableName :: HLElement -> Maybe VariableName
 getValuableName (VariableDeclaration  name _  ) = Just name
 getValuableName (RegisterDeclaration  name _  ) = Just name
@@ -80,9 +83,9 @@ variableNameValue _                            = Nothing
 usedVariables :: HLElement -> [VariableName]
 usedVariables (IfBranch (Just (Condition(left, _, right)))) = name left ++ name right
     where name (LeftValue (NameValue name)) = [name]
-          name _                = []
+          name _                            = []
 usedVariables (Call _ xs)                         = fromMaybe [] $ traverse variableNameValue xs
-usedVariables (Assignment left (LeftValue right)) = fromMaybe [] $ traverse (variableNameValue . LeftValue) [left, right]
+usedVariables (Assignment left (LeftValue right)) = concatMap (maybeToList . variableNameValue . LeftValue) [left, right]
 usedVariables (Assignment left _)                 = fromMaybe [] $ traverse (variableNameValue . LeftValue) [left]
 usedVariables _                                   = []
 

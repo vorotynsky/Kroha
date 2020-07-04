@@ -64,8 +64,9 @@ findTarget :: StackFrame -> [VariableData] -> VariableName -> Target --  was a l
 findTarget frame xs name = target frame . fromJust . find (\(VariableData (n, _)) -> n == name) $ xs
 
 valuableTarget :: (StackFrame, [VariableData]) -> RValue -> Target
-valuableTarget _        (IntegerValue v) = ConstantTarget v
+valuableTarget _        (IntegerValue v)                = ConstantTarget v
 valuableTarget (sf, vd) (LeftValue(NameValue name))     = findTarget sf vd name
+valuableTarget (sf, vd) (LeftValue(RegisterValue name)) = Register name
 
 loop :: Label -> Result (InstructionSet) -> Result (InstructionSet)
 loop lbl i = let begin = lbl ++ "begin" in fmap (\x -> [Label begin] ++ x ++ [Jump begin Nothing, Label (lbl ++ "end")]) $ i
@@ -79,6 +80,7 @@ isEmptyInstruction _                         = False
 
 rval2target :: RValue -> StackFrame -> [VariableData] -> Target
 rval2target (IntegerValue val)               _ _ = ConstantTarget val
+rval2target (LeftValue (RegisterValue name)) _ _ = Register name
 rval2target (LeftValue (NameValue     name)) s d = findTarget s d name
 
 instructions :: Tree (HLElement, [VariableData], [LabelData], StackFrame) -> Result (InstructionSet)
