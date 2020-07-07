@@ -37,6 +37,10 @@ getType (GlobalVarDeclaration _ t _) = t
 getType (RegisterDeclaration _ r)    = Type "int" (Just (registerSize r))
 getType (FakeVariable _)             = Type "any" Nothing
 
+getSize :: Type -> Int
+getSize (Type "int" (Just size)) = size
+getSize _                        = 0
+
 lookupType :: VariableName -> [VariableData] -> Maybe Type
 lookupType name = fmap getType . lookup name . fmap (\(VariableData x) -> x)
 

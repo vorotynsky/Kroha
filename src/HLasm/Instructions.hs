@@ -17,6 +17,7 @@ import           HLasm.Ast
 import           HLasm.Frame
 import           HLasm.Scope
 import           HLasm.Error
+import           HLasm.Types
 
 type Offset = Int
 type Size = Int
@@ -101,7 +102,7 @@ instructions (Node ((Assignment left right), d, _, f) _)
 
 instructions (Node ((HLasm.Ast.Call lbl ns  ), d, _, f) _ ) = 
     Right [HLasm.Instructions.Call lbl (fmap (\n -> rval2target n f d) ns) size]
-    where size = foldl (+) 0 . fmap (\(VariableData (_, d)) -> stackVarSize d) $ d
+    where size = foldl (+) 0 . fmap (fromMaybe 0 . fmap getSize . literalType d) $ ns
 
 instructions (Node ((If lbl), _, _, _) []) = Right []
 instructions (Node ((If lbl), _, _, _) xs) =
