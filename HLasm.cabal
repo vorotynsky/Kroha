@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.1.
+-- This file has been generated from package.yaml by hpack version 0.34.2.
 --
 -- see: https://github.com/sol/hpack
 
 name:           HLasm
-version:        0.3.0.0
+version:        0.4.0.0
 description:    Please see the README on GitHub at <https://github.com/vorotynsky/HLasm#readme>
 homepage:       https://github.com/vorotynsky/HLasm#readme
 bug-reports:    https://github.com/vorotynsky/HLasm/issues

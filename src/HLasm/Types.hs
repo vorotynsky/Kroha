@@ -28,6 +28,8 @@ registerSize ('e':x)     | elem x sysregs = 32
 registerSize ('r':x)     | elem x sysregs = 64
 registerSize _                            = 0
 
+registerType = Type "int" . Just . registerSize
+
 getType :: HLElement -> Type
 getType (VariableDeclaration _ t)    = t
 getType (ConstVarDeclaration _ t _)  = t
@@ -35,25 +37,29 @@ getType (GlobalVarDeclaration _ t _) = t
 getType (RegisterDeclaration _ r)    = Type "int" (Just (registerSize r))
 getType (FakeVariable _)             = Type "any" Nothing
 
+getSize :: Type -> Int
+getSize (Type "int" (Just size)) = size
+getSize _                        = 0
+
 lookupType :: VariableName -> [VariableData] -> Maybe Type
 lookupType name = fmap getType . lookup name . fmap (\(VariableData x) -> x)
 
-literalType :: [VariableData] -> HLValue -> Maybe Type
+literalType :: [VariableData] -> RValue -> Maybe Type
 literalType _ (IntegerValue x) = Just $ Type "int" (Just $ size x)
     where size = ceiling . (\x -> log (x + 1) / log 2) . toEnum
-literalType s (NameValue name) = lookupType name s
-literalType _ _ = undefined
+literalType s (LeftValue (NameValue     name)) = lookupType name s
+literalType s (LeftValue (RegisterValue name)) = Just $ registerType name
 
 err a b = maybe (Left (a, b)) Right
 
-astCheck :: HLElement -> [VariableData] -> Either (HLValue, HLValue) ()
+astCheck :: HLElement -> [VariableData] -> Either (RValue, RValue) ()
 astCheck (IfBranch (Just (Condition (left, _, right)))) xs =
     do leftType  <- err left right $ literalType xs left
        rightType <- err left right $ literalType xs right
        if typeSuit leftType rightType then Right () else err left right Nothing
 astCheck (Assignment left right) xs =
-    let error = err (NameValue left) right in
-    do leftType  <- error $ lookupType left xs
+    let error = err (LeftValue left) right in
+    do leftType  <- error $ literalType xs (LeftValue left)
        rightType <- error $ literalType xs right
        if typeSuit leftType rightType then Right () else error Nothing
 astCheck _ _ = Right ()

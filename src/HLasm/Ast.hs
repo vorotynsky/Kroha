@@ -21,18 +21,25 @@ data CompareType =
     | Less
     deriving (Show, Eq)
 
-data HLValue = 
+data LValue =
     NameValue VariableName
-    | IntegerValue Int
-    | StringValue String
+    | RegisterValue RegisterName
     deriving (Eq)
 
-instance Show HLValue where
-    show (NameValue   name) = name
-    show (IntegerValue num) = show num
-    show (StringValue  str) = show str
+data RValue =
+    LeftValue LValue
+    | IntegerValue Int
+    deriving (Eq)
 
-data Condition = Condition (HLValue, CompareType, HLValue)
+instance Show LValue where
+    show (NameValue     name) = name
+    show (RegisterValue name) = '%':name
+
+instance Show RValue where
+    show (LeftValue  value) = show value
+    show (IntegerValue num) = show num
+
+data Condition = Condition (RValue, CompareType, RValue)
     deriving (Show, Eq)
 
 data HLElement = 
@@ -40,8 +47,8 @@ data HLElement =
     | InstructionSet
     | RegisterDeclaration  VariableName RegisterName
     | VariableDeclaration  VariableName Type
-    | GlobalVarDeclaration VariableName Type HLValue
-    | ConstVarDeclaration  VariableName Type HLValue
+    | GlobalVarDeclaration VariableName Type RValue
+    | ConstVarDeclaration  VariableName Type RValue
     | FakeVariable         VariableName
     | FakeFrame            Label
     | Frame (Maybe Label)
@@ -50,10 +57,11 @@ data HLElement =
     | While Label
     | DoWhile Label
     | Break Label
-    | Call Label [VariableName]
-    | Assignment VariableName HLValue
+    | Call Label [RValue]
+    | Assignment LValue RValue
     | AssemblyCall String
     deriving (Show, Eq)
+
 
 getValuableName :: HLElement -> Maybe VariableName
 getValuableName (VariableDeclaration  name _  ) = Just name
@@ -68,13 +76,17 @@ isVariable = isJust . getValuableName
 variableName :: HLElement -> VariableName
 variableName = fromJust . getValuableName
 
+variableNameValue :: RValue -> Maybe VariableName
+variableNameValue (LeftValue (NameValue name)) = Just name
+variableNameValue _                            = Nothing
+
 usedVariables :: HLElement -> [VariableName]
 usedVariables (IfBranch (Just (Condition(left, _, right)))) = name left ++ name right
-    where name (NameValue name) = [name]
-          name _                = []
-usedVariables (Call _ xs)                         = xs
-usedVariables (Assignment left (NameValue right)) = [left, right]
-usedVariables (Assignment left _)                 = [left]
+    where name (LeftValue (NameValue name)) = [name]
+          name _                            = []
+usedVariables (Call _ xs)                         = fromMaybe [] $ traverse variableNameValue xs
+usedVariables (Assignment left (LeftValue right)) = concatMap (maybeToList . variableNameValue . LeftValue) [left, right]
+usedVariables (Assignment left _)                 = fromMaybe [] $ traverse (variableNameValue . LeftValue) [left]
 usedVariables _                                   = []
 
 usedLabels :: HLElement -> [Label]
