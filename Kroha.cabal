@@ -26,9 +26,11 @@ executable Kroha
   main-is: Main.hs
   other-modules:
       Kroha
+      Kroha.Ast
       Paths_Kroha
   hs-source-dirs:
       src
   build-depends:
       base >=4.7 && <5
+    , containers >=0.6 && <0.7
   default-language: Haskell2010
