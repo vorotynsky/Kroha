@@ -21,6 +21,8 @@ description:         Please see the README on GitHub at <https://github.com/voro
 dependencies:
 - base >= 4.7 && < 5
 - containers >= 0.6 && < 0.7
+- parsec >= 3.1.0 && <= 3.1.14.0
+- extra >= 1.0 && < 1.8
 
 executables:
   Kroha:

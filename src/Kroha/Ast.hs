@@ -12,7 +12,7 @@ type Label = String
 data TypeName 
     = TypeName String
     | SizedType String Int
-    | Pointer TypeName    
+    | PointerType TypeName    
     deriving (Show, Eq)
 
 data Literal
@@ -45,8 +45,8 @@ newtype Condition = Condition (RValue, Comparator, RValue)
 data FrameElement
     = Instructions [FrameElement]
     | VariableDeclaration LocalVariable
-    | If Condition FrameElement FrameElement
-    | Loop Label
+    | If Label Condition FrameElement FrameElement
+    | Loop Label FrameElement
     | Break Label
     | Call Label [RValue]
     | Assignment LValue RValue
@@ -70,8 +70,8 @@ type Selector a = FrameElement -> a
 childs :: FrameElement -> [FrameElement]
 childs (Instructions xs)       = xs 
 childs (VariableDeclaration x) = []
-childs (If _ b e)              = [b, e]
-childs (Loop _)                = []
+childs (If _ _ b e)            = [b, e]
+childs (Loop _ _)              = []
 childs (Break _)               = []
 childs (Call _ _)              = []
 childs (Assignment _ _)        = []
