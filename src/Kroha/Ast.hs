@@ -3,7 +3,7 @@
 module Kroha.Ast where
 
 import Data.Tree
-import Data.Functor.Identity
+import Data.List (mapAccumR)
 
 type VariableName = String
 type RegisterName = String
@@ -93,10 +93,8 @@ selectorProg df sf (Program declarations) = fmap mapper declarations
 
 type NodeId = Int
 
--- Generates an unique integer for each node.
--- i'm not sure if it's works correctly
 genId :: Tree a -> Tree NodeId
-genId tree = unfoldTree (\(e, t@(Node _ childs)) -> (e + 1, zip [e + 2,(e + 3 + length t) ..] childs)) (0, tree)
+genId = snd . mapAccumR (\ac b -> (ac + 1, ac)) 0
 
 progId :: Program -> Tree NodeId
-progId program = genId $ Node id (selectorProg (const id) (const id) program)
+progId program = genId $ Node () (selectorProg (const ()) (const ()) program)

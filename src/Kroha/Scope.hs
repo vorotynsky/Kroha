@@ -1,7 +1,7 @@
 module Kroha.Scope where
 
 import Control.Monad (join)
-import Control.Monad.Zip (mzip, munzip)
+import Control.Monad.Zip (mzip, munzip, mzipWith)
 import Data.Maybe (mapMaybe)
 import Data.Tree (Tree(..))
 
@@ -55,7 +55,7 @@ localScope :: Program -> Tree (ScopeEffect, [ScopeEffect])
 localScope program = Node (FluentScope, []) (selectorProg dscope' scope program)
 
 linksTree :: Program -> Tree ScopeLink
-linksTree program = Node (RootProgramLink) (selectorProg DeclarationLink ElementLink program) <*> progId program
+linksTree program = mzipWith id (Node (RootProgramLink) (selectorProg DeclarationLink ElementLink program)) (progId program)
 
 scopeTree :: Scope -> Tree (ScopeEffect, ScopeLink) -> Tree Scope
 scopeTree parent (Node effect childs) = Node (effect:parent) childScope
