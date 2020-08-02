@@ -40,24 +40,22 @@ dscope' d = (dscope d, [] :: [ScopeEffect])
 
 type Scope = [(ScopeEffect, ScopeLink)]
 
-find = lookup :: ScopeEffect -> Scope -> Maybe (ScopeLink)
-
 toRight _ (Just x) = Right x
 toRight x (Nothing) = Left x
 
-findEither k = toRight k . find k
+findEither k = toRight k . lookup k
 
 data ScopeLink
-    = ElementLink FrameElement
-    | DeclarationLink Declaration
-    | RootProgramLink
+    = ElementLink FrameElement NodeId
+    | DeclarationLink Declaration NodeId
+    | RootProgramLink NodeId
     deriving (Show)
 
 localScope :: Program -> Tree (ScopeEffect, [ScopeEffect])
 localScope program = Node (FluentScope, []) (selectorProg dscope' scope program)
 
 linksTree :: Program -> Tree ScopeLink
-linksTree program = Node RootProgramLink (selectorProg DeclarationLink ElementLink program)
+linksTree program = Node (RootProgramLink) (selectorProg DeclarationLink ElementLink program) <*> progId program
 
 scopeTree :: Scope -> Tree (ScopeEffect, ScopeLink) -> Tree Scope
 scopeTree parent (Node effect childs) = Node (effect:parent) childScope

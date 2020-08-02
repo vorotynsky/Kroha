@@ -3,6 +3,7 @@
 module Kroha.Ast where
 
 import Data.Tree
+import Data.Functor.Identity
 
 type VariableName = String
 type RegisterName = String
@@ -88,3 +89,14 @@ selectorProg :: (Declaration -> a) -> Selector a -> Program -> Forest a
 selectorProg df sf (Program declarations) = fmap mapper declarations
     where mapper d@(Frame _ frame) = Node (df d) [selector sf frame]
           mapper declaration = Node (df declaration) []
+
+
+type NodeId = Int
+
+-- Generates an unique integer for each node.
+-- i'm not sure if it's works correctly
+genId :: Tree a -> Tree NodeId
+genId tree = unfoldTree (\(e, t@(Node _ childs)) -> (e + 1, zip [e + 2,(e + 3 + length t) ..] childs)) (0, tree)
+
+progId :: Program -> Tree NodeId
+progId program = genId $ Node id (selectorProg (const id) (const id) program)
