@@ -28,6 +28,7 @@ executable Kroha
       Kroha
       Kroha.Ast
       Kroha.Parser
+      Kroha.Scope
       Paths_Kroha
   hs-source-dirs:
       src

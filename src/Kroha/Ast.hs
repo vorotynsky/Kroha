@@ -71,7 +71,7 @@ childs :: FrameElement -> [FrameElement]
 childs (Instructions xs)       = xs 
 childs (VariableDeclaration x) = []
 childs (If _ _ b e)            = [b, e]
-childs (Loop _ _)              = []
+childs (Loop _ b)              = [b]
 childs (Break _)               = []
 childs (Call _ _)              = []
 childs (Assignment _ _)        = []
@@ -82,3 +82,9 @@ selector s = unfoldTree (\e -> (s e, childs e))
 
 selectorM :: Monad m => Selector (m a) -> FrameElement -> m (Tree a)
 selectorM s = unfoldTreeM (\e -> s e >>= (\x -> return (x, childs e)))
+
+
+selectorProg :: (Declaration -> a) -> Selector a -> Program -> Forest a
+selectorProg df sf (Program declarations) = fmap mapper declarations
+    where mapper d@(Frame _ frame) = Node (df d) [selector sf frame]
+          mapper declaration = Node (df declaration) []
