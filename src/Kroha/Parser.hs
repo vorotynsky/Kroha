@@ -44,8 +44,7 @@ break  = Break  <$> (keyword "break" *> parens name)
 inline = Inline <$> aparse (char '!' *> many (noneOf "\n"))
 call   = Call   <$> (keyword "call" *> angles name) <*> parens (rvalue `sepBy` achar ',')
 
-vtype = PointerType <$> (achar '&' *> vtype)
-    <|> SizedType <$> name <*> (parens nat)
+vtype = PointerType <$> (achar '&' *> vtype) 
     <|> TypeName <$> name  
 
 register = aparse $ VariableDeclaration <$> (RegisterVariable <$> (keyword "reg" *> name) <*> (achar ':' *> name ))

@@ -12,7 +12,6 @@ type Label = String
 
 data TypeName 
     = TypeName String
-    | SizedType String Int
     | PointerType TypeName    
     deriving (Show, Eq)
 
