@@ -62,12 +62,12 @@ scopeTree parent (Node effect childs) = Node (effect:parent) childScope
     where folder acc child = (rootLabel child : fst acc, snd acc ++ [scopeTree (fst acc) child])
           childScope = snd $ foldl folder (effect:parent, []) childs
 
-linkScope :: Tree ([ScopeEffect], Scope) -> Either (ScopeEffect) (Tree [(ScopeEffect, ScopeLink)])
+linkScope :: Tree ([ScopeEffect], Scope) -> Either (ScopeEffect) (Tree Scope)
 linkScope (Node (request, scope) childs) = join . fmap buildTree $ results
     where results = traverse (\r -> findEither r scope >>= return . (,) r) request
           buildTree request = sequence . traverse (Node request) $ traverse linkScope childs
 
-linkProgram :: Program -> Either (ScopeEffect) (Tree [(ScopeEffect, ScopeLink)])
+linkProgram :: Program -> Either (ScopeEffect) (Tree Scope)
 linkProgram program = linkScope (mzip requests scope)
     where (changes, requests) = munzip (localScope program)
           scope = scopeTree [] (mzip changes (linksTree program))

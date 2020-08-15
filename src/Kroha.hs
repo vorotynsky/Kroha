@@ -6,7 +6,8 @@ import Control.Monad.Zip (mzip)
 
 import Kroha.Parser (parse)
 import Kroha.Ast (selectorProg, FrameElement(..))
-import Kroha.Scope (linkProgram)
+import Kroha.Scope (linkProgram, linksTree)
+import Kroha.Types (resolve, typeCasts)
 
 kroha :: String -> Either String String
 kroha src = fmap (drawTree . fmap show) compile
@@ -14,4 +15,5 @@ kroha src = fmap (drawTree . fmap show) compile
                     program <- first id   $ parse src
                     scopes  <- first show $ linkProgram program
                     let programTree = Node (Instructions []) (selectorProg (const $ Instructions []) id program)
-                    return (mzip programTree scopes)
+                    types   <- first show $ resolve 16 . typeCasts $ mzip (linksTree program) scopes
+                    return (types)
