@@ -1,19 +1,24 @@
 module Kroha where
 
-import Data.Bifunctor (first)
-import Data.Tree (Tree(..), drawTree)
-import Control.Monad.Zip (mzip)
+import           Control.Monad.Zip (munzip, mzip)
+import           Data.Bifunctor    (first)
+import           Data.Tree         (Tree (..), drawTree)
 
-import Kroha.Parser (parse)
-import Kroha.Ast (selectorProg, FrameElement(..))
-import Kroha.Scope (linkProgram, linksTree)
-import Kroha.Types (resolve, typeCasts)
+import           Kroha.Ast         (FrameElement (..), selectorProg)
+import           Kroha.Parser      (parse)
+import           Kroha.Scope       (linkProgram, linksTree)
+import           Kroha.Stack       (stackFrames)
+import           Kroha.Types       (resolve, typeCasts)
+
 
 kroha :: String -> Either String String
-kroha src = fmap (drawTree . fmap show) compile
+kroha src = do (sizes, frames) <- fmap munzip compile
+               let tree = drawTree $ Node "program" ((fmap . fmap) show frames)
+               return (show sizes ++ "\n" ++ tree)
     where compile = do
                     program <- first id   $ parse src
                     scopes  <- first show $ linkProgram program
                     let programTree = Node (Instructions []) (selectorProg (const $ Instructions []) id program)
                     types   <- first show $ resolve 16 . typeCasts $ mzip (linksTree program) scopes
-                    return (types)
+                    let stack = stackFrames 16 program
+                    return stack

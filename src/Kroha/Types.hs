@@ -23,7 +23,9 @@ registerSize _                            = 0
 
 registerType reg = let rs = registerSize reg in if rs > 0 then Just . TypeName $ "int" ++ show rs else Nothing
 
-typeSize :: Int -> TypeName -> Int
+type PointerSize = Int
+
+typeSize :: PointerSize -> TypeName -> Int
 typeSize ptr (PointerType _)            = ptr
 typeSize _   (TypeName ('i':'n':'t':x)) = read x
 typeSize _   _                          = 0
@@ -64,7 +66,7 @@ typeCasts = let f ((RootProgramLink _  ), _)     = []
                 f ((ElementLink el _)   , scope) = casts el scope 
             in fmap f
 
-resolve :: Int -> Tree [TypeCast] -> Either TypeCast (Tree [TypeCast])
+resolve :: PointerSize -> Tree [TypeCast] -> Either TypeCast (Tree [TypeCast])
 resolve ptr = sequenceA . fmap sequenceA . (fmap . fmap) resolver
     where resolver tc = if lsize > 0 && rsize > 0 then Right tc else Left tc
               where (lsize, rsize) = let size = typeSize ptr in bimap size size tc
