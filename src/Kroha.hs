@@ -10,14 +10,11 @@ import           Kroha.Scope       (linkProgram, linksTree)
 import           Kroha.Stack       (stack)
 import           Kroha.Types       (resolve, typeCasts)
 import           Kroha.Instructions(instructions)
+import           Kroha.Backends.Nasm (runNasm)
 
 
 kroha :: String -> Either String String
-kroha src = fmap (concat . (\x -> do
-                         (section, _, instructions) <- x 
-                         let showed = drawTree $ fmap show instructions
-                         return $ section ++ ":\n" ++ showed)
-                  ) compile
+kroha src = compile
     where compile = do
                     program <- first id   $ parse src
                     scopes  <- first show $ linkProgram program
@@ -25,4 +22,4 @@ kroha src = fmap (concat . (\x -> do
                     types   <- first show $ resolve 16 . typeCasts $ mzip (linksTree program) scopes
                     let stackRanges = stack 16 program
                     let prepared = instructions stackRanges scopes program
-                    return prepared
+                    return (runNasm prepared)
