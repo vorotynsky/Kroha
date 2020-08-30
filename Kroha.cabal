@@ -27,6 +27,7 @@ executable Kroha
   other-modules:
       Kroha
       Kroha.Ast
+      Kroha.Instructions
       Kroha.Parser
       Kroha.Scope
       Kroha.Stack
