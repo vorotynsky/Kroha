@@ -1,16 +1,17 @@
 module Kroha where
 
-import           Control.Monad.Zip (munzip, mzip)
-import           Data.Bifunctor    (first)
-import           Data.Tree         (Tree (..), drawTree)
+import           Control.Monad.Zip     (mzip)
+import           Data.Bifunctor        (first)
+import           Data.Tree             (Tree (..))
 
-import           Kroha.Ast         (FrameElement (..), selectorProg)
-import           Kroha.Parser      (parse)
-import           Kroha.Scope       (linkProgram, linksTree)
-import           Kroha.Stack       (stack)
-import           Kroha.Types       (resolve, typeCasts)
-import           Kroha.Instructions(instructions)
-import           Kroha.Backends.Nasm (runNasm)
+import           Kroha.Parser          (parse)
+import           Kroha.Ast             (FrameElement (Instructions), selectorProg)
+import           Kroha.Scope           (linkProgram, linksTree)
+import           Kroha.Types           (resolve, typeCasts)
+import           Kroha.Stack           (stack)
+import           Kroha.Instructions    (instructions)
+import           Kroha.Backends.Common (runBackend)
+import           Kroha.Backends.Nasm   (nasm)
 
 
 kroha :: String -> Either String String
@@ -22,4 +23,4 @@ kroha src = compile
                     types   <- first show $ resolve 16 . typeCasts $ mzip (linksTree program) scopes
                     let stackRanges = stack 16 program
                     let prepared = instructions stackRanges scopes program
-                    return (runNasm prepared)
+                    return (runBackend nasm prepared)
