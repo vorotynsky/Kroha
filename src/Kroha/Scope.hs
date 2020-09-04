@@ -67,7 +67,11 @@ linkScope (Node (request, scope) childs) = join . fmap buildTree $ results
     where results = traverse (\r -> findEither r scope >>= return . (,) r) request
           buildTree request = sequence . traverse (Node request) $ traverse linkScope childs
 
+declarationScope :: Program -> Scope
+declarationScope p@(Program declarations) = fmap (\(el, id) -> (dscope el, DeclarationLink el id)) $ zip declarations ids
+    where ids = let (Node _ forest) = progId p in fmap rootLabel forest
+
 linkProgram :: Program -> Either (ScopeEffect) (Tree Scope)
 linkProgram program = linkScope (mzip requests scope)
     where (changes, requests) = munzip (localScope program)
-          scope = scopeTree [] (mzip changes (linksTree program))
+          scope = scopeTree (declarationScope program) (mzip changes (linksTree program))
