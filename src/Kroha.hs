@@ -7,10 +7,10 @@ import           Data.Tree             (Tree (..))
 import           Kroha.Parser          (parse)
 import           Kroha.Ast             (FrameElement (Instructions), selectorProg)
 import           Kroha.Scope           (linkProgram, linksTree)
-import           Kroha.Types           (resolve, typeCasts)
+import           Kroha.Types           (resolve, typeCastsTree, TypeConfig(..))
 import           Kroha.Stack           (stack)
 import           Kroha.Instructions    (instructions)
-import           Kroha.Backends.Common (runBackend)
+import           Kroha.Backends.Common (runBackend, Backend(typeConfig))
 import           Kroha.Backends.Nasm   (nasm)
 
 
@@ -20,7 +20,8 @@ kroha src = compile
                     program <- first id   $ parse src
                     scopes  <- first show $ linkProgram program
                     let programTree = Node (Instructions []) (selectorProg (const $ Instructions []) id program)
-                    types   <- first show $ resolve 16 . typeCasts $ mzip (linksTree program) scopes
-                    let stackRanges = stack 16 program
+                    let tc = (typeConfig nasm)
+                    types   <- first show $ resolve tc (typeCastsTree tc $ mzip (linksTree program) scopes)
+                    let stackRanges = stack tc program
                     let prepared = instructions stackRanges scopes program
                     return (runBackend nasm prepared)

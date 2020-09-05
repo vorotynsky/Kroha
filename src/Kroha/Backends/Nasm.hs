@@ -1,13 +1,16 @@
 module Kroha.Backends.Nasm (nasm) where
 
 import Data.Tree
+import Data.Graph (buildG)
 import Data.List (groupBy, intercalate)
 import Control.Monad.Fix (fix)
 import Control.Monad (join)
 import Data.List.Extra (groupSort)
+import Data.Bifunctor (first)
 
 import Kroha.Ast
 import Kroha.Backends.Common
+import Kroha.Types
 import Kroha.Instructions (Instruction(..), LabelTarget(..), Target(..), Section)
 
 bytes :: Int -> Int
@@ -46,15 +49,27 @@ nasmType (TypeName "int8" ) = "db"
 nasmType (TypeName "int16") = "dw"
 
 nasmDeclaration :: Declaration -> [String] -> String
-nasmDeclaration (Frame l _)                               body = l ++ ":\n" ++ intercalate "\n" body ++ "leave\nret\n"
+nasmDeclaration (Frame l _)                               body = l ++ ":\n" ++ intercalate "\n" body ++ "\nleave\nret\n"
 nasmDeclaration (ManualFrame l _)                         body = l ++ ":\n" ++ intercalate "\n" body ++"\n"
 nasmDeclaration (ManualVariable v _ _)                    body = v ++ ": "  ++ intercalate "\n" body ++"\n"
 nasmDeclaration (GlobalVariable   n t (IntegerLiteral l)) _    = n ++ ": "  ++ nasmType t ++ " " ++ show l ++"\n"
 nasmDeclaration (ConstantVariable n t (IntegerLiteral l)) _    = n ++ ": "  ++ nasmType t ++ " " ++ show l ++"\n"
+
+litType :: Literal -> Maybe TypeId
+litType (IntegerLiteral x) | x >= 0   && x < 65536 = Just 2
+                           | otherwise             = Nothing
+
+nasmTypes = TypeConfig 
+    { types = (fmap . first) TypeName [("int8", 8), ("int16", 16), ("+literal+", 16)]
+    , pointerType = 1
+    , registers = zip (join $ fmap (\x -> fmap ((:) x . pure) "lhx") "abcd") (cycle [0, 0, 1])
+    , typeCasts = buildG (0, 3) [(0, 2), (1, 2)]
+    , literalType = litType }
 
 nasm = Backend 
     { instruction = nasm16I
     , bodyWrap    = id
     , indent      = "  "
     , section     = nasmSection
-    , declaration = nasmDeclaration }
+    , declaration = nasmDeclaration
+    , typeConfig  = nasmTypes }

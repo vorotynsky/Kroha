@@ -1,15 +1,18 @@
 module Kroha.Backends.Common (Backend(..), runBackend) where
 
-import Data.Tree
 import Kroha.Ast (Declaration(..))
+import Kroha.Types (TypeConfig)
 import Kroha.Instructions (Instruction(Body), Section)
+
 import Control.Monad (join)
+import Data.Tree (Tree(..))
 import Data.Char (isSpace)
 import Data.Semigroup (Min(Min, getMin))
 
 
 data Backend = Backend 
-    { instruction :: Instruction -> [String]
+    { typeConfig :: TypeConfig
+    , instruction :: Instruction -> [String]
     , bodyWrap :: [String] -> [String]
     , indent :: String
     , section :: Section -> String -> String
