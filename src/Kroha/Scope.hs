@@ -6,6 +6,7 @@ import Data.Maybe (mapMaybe)
 import Data.Tree (Tree(..))
 
 import Kroha.Ast
+import Kroha.Errors
 
 data ScopeEffect 
     = FluentScope
@@ -71,7 +72,9 @@ declarationScope :: Program -> Scope
 declarationScope p@(Program declarations) = fmap (\(el, id) -> (dscope el, DeclarationLink el id)) $ zip declarations ids
     where ids = let (Node _ forest) = progId p in fmap rootLabel forest
 
-linkProgram :: Program -> Either (ScopeEffect) (Tree Scope)
-linkProgram program = linkScope (mzip requests scope)
+linkProgram :: Program -> Result (Tree Scope)
+linkProgram program = firstE error $ linkScope (mzip requests scope)
     where (changes, requests) = munzip (localScope program)
           scope = scopeTree (declarationScope program) (mzip changes (linksTree program))
+          error (VariableScope var) = VariableNotFound var
+          error (LabelScope label)  = LabelNotFound label

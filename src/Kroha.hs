@@ -15,13 +15,14 @@ import           Kroha.Backends.Nasm   (nasm)
 
 
 kroha :: String -> Either String String
-kroha src = compile
+kroha src = first show compile
     where compile = do
-                    program <- first id   $ parse src
-                    scopes  <- first show $ linkProgram program
+                    program <- parse src
+                    scopes  <- linkProgram program
                     let programTree = Node (Instructions []) (selectorProg (const $ Instructions []) id program)
                     let tc = (typeConfig nasm)
-                    types   <- first show $ resolve tc (typeCastsTree tc $ mzip (linksTree program) scopes)
+                    casts   <- (typeCastsTree tc $ mzip (linksTree program) scopes)
+                    types   <- resolve tc casts
                     let stackRanges = stack tc program
                     let prepared = instructions stackRanges scopes program
                     return (runBackend nasm prepared)

@@ -29,6 +29,7 @@ executable Kroha
       Kroha.Ast
       Kroha.Backends.Common
       Kroha.Backends.Nasm
+      Kroha.Errors
       Kroha.Instructions
       Kroha.Parser
       Kroha.Scope

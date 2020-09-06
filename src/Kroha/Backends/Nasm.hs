@@ -12,6 +12,7 @@ import Kroha.Ast
 import Kroha.Backends.Common
 import Kroha.Types
 import Kroha.Instructions (Instruction(..), LabelTarget(..), Target(..), Section)
+import Kroha.Errors
 
 bytes :: Int -> Int
 bytes x = ceiling ((toEnum x) / 8)
@@ -55,9 +56,9 @@ nasmDeclaration (ManualVariable v _ _)                    body = v ++ ": "  ++ i
 nasmDeclaration (GlobalVariable   n t (IntegerLiteral l)) _    = n ++ ": "  ++ nasmType t ++ " " ++ show l ++"\n"
 nasmDeclaration (ConstantVariable n t (IntegerLiteral l)) _    = n ++ ": "  ++ nasmType t ++ " " ++ show l ++"\n"
 
-litType :: Literal -> Maybe TypeId
-litType (IntegerLiteral x) | x >= 0   && x < 65536 = Just 2
-                           | otherwise             = Nothing
+litType :: Literal -> Result TypeId
+litType l@(IntegerLiteral x) | x >= 0   && x < 65536 = Right 2
+                             | otherwise             = Left (BackendError (show l ++ " is not in [0; 65536)"))
 
 nasmTypes = TypeConfig 
     { types = (fmap . first) TypeName [("int8", 8), ("int16", 16), ("+literal+", 16)]

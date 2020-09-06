@@ -5,6 +5,7 @@
 module Kroha.Parser (Kroha.Parser.parse) where
 
 import           Kroha.Ast
+import           Kroha.Errors
 
 import           Data.Bifunctor     (bimap)
 import           Data.Maybe         (maybeToList)
@@ -92,5 +93,5 @@ frame p = Frame <$> fname <*> block p
 globals = frame hlasm <|> constant <|> globvar <|> manualFrame <|> manualVar
 program = keyword "program" *> braces (many globals)
 
-parse :: String -> Either String Program
-parse = bimap show Program . Text.Parsec.parse program ""
+parse :: String -> Result Program
+parse = bimap (ParserError . show) Program . Text.Parsec.parse program ""
