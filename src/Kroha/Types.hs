@@ -63,7 +63,7 @@ typeCastsTree :: TypeConfig -> Tree (ScopeLink, Scope) -> Either Error (Tree ([T
 typeCastsTree tc = let f ((RootProgramLink _  ), _)     = []
                        f ((DeclarationLink _ _), _)     = []
                        f ((ElementLink el _)   , scope) = let ?tc = tc in casts el scope 
-                   in first (JoinedError . join) . sequenceErrors . fmap (partitionErrors . f)
+                   in sequenceErrors (JoinedError . join) . fmap (partitionErrors . f)
 
 
 resolve :: TypeConfig -> Tree [TypeCast] -> Result (Tree [TypeCast])

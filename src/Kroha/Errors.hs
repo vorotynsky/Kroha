@@ -1,8 +1,8 @@
 module Kroha.Errors where
 
 import Kroha.Ast
-import Data.Bifunctor (first)
-import Data.Either (fromRight, partitionEithers)
+import Data.Bifunctor (bimap, first)
+import Data.Either (partitionEithers)
 import Data.Foldable (toList)
 import Data.List (intercalate)
 
@@ -35,6 +35,6 @@ firstE = first
 partitionErrors :: [Either a b] -> Either [a] [b]
 partitionErrors e = let (a, b) = partitionEithers e in if (null a) then Right b else Left a
 
-sequenceErrors :: (Foldable f, Functor f) => f (Either a b) -> Either [a] (f b)
-sequenceErrors e = fmap (const g) $ partitionErrors (toList e)
+sequenceErrors :: (Foldable f, Functor f) => ([a] -> c) -> f (Either a b) -> Either c (f b)
+sequenceErrors f e = bimap f (const g) $ partitionErrors (toList e)
     where g = fmap (\(Right x) -> x) e
