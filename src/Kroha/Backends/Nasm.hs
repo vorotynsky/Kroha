@@ -1,13 +1,18 @@
-module Kroha.Backends.Nasm where
+module Kroha.Backends.Nasm (nasm) where
 
 import Data.Tree
+import Data.Graph (buildG)
 import Data.List (groupBy, intercalate)
 import Control.Monad.Fix (fix)
 import Control.Monad (join)
 import Data.List.Extra (groupSort)
+import Data.Bifunctor (first)
 
 import Kroha.Ast
-import Kroha.Instructions hiding (target)
+import Kroha.Backends.Common
+import Kroha.Types
+import Kroha.Instructions (Instruction(..), LabelTarget(..), Target(..), Section)
+import Kroha.Errors
 
 bytes :: Int -> Int
 bytes x = ceiling ((toEnum x) / 8)
@@ -36,32 +41,37 @@ nasm16I (CallI l args)               = (fmap (((++) "push ") . target) . reverse
 nasm16I (Jump l Nothing)             = ["jmp " ++ label l]
 nasm16I (Jump lbl (Just (l, c, r)))  = ["cmp " ++ target l ++ ", " ++ target r, jump c ++ " " ++ label lbl]
 
-nasmBodyWrap body = body
-
-makeFix :: Tree [Instruction] -> [String]
-makeFix (Node i c) = join . fmap asmFix $ i
-    where asmFix (Body _ i) = fmap ((++) indent) . bodyWrap $ makeFix (c !! i)
-          asmFix i          = asm i
-          (asm, indent, bodyWrap) = (nasm16I, "  ", id)
-
-nasmSection :: Section -> [[String]] -> String
-nasmSection section declarations = header <> body <> "\n\n"
+nasmSection :: Section -> String -> String
+nasmSection section body = header <> body <> "\n\n"
     where header = "section ." ++ section ++ "\n"
-          body   = intercalate "\n" . fmap (intercalate "\n") $ declarations
 
 nasmType :: TypeName -> String
 nasmType (TypeName "int8" ) = "db"
 nasmType (TypeName "int16") = "dw"
 
-nasmDeclaration :: Tree [Instruction] -> Declaration -> [String]
-nasmDeclaration t (Frame l _)                               = [l ++ ":"] ++ makeFix t ++ ["leave", "ret"]
-nasmDeclaration _ (GlobalVariable   n t (IntegerLiteral l)) = [n ++ ": " ++ nasmType t ++ " " ++ show l]
-nasmDeclaration _ (ConstantVariable n t (IntegerLiteral l)) = [n ++ ": " ++ nasmType t ++ " " ++ show l]
-nasmDeclaration _ (ManualFrame l c)                         = [l ++ ":", c]
-nasmDeclaration _ (ManualVariable v _ c)                    = [v ++ ": " ++ c]
+nasmDeclaration :: Declaration -> [String] -> String
+nasmDeclaration (Frame l _)                               body  = l ++ ":\n" ++ intercalate "\n" body ++ "\nleave\nret\n"
+nasmDeclaration (ManualVariable v _ _)                   [body] = v ++ ": "  ++ body ++ "\n"
+nasmDeclaration (ManualFrame l _)                         body  = l ++ ":\n" ++ intercalate "\n" (fmap ((++) "  ") body)
+nasmDeclaration (ManualVariable v _ _)                    body  = v ++ ":\n" ++ intercalate "\n" (fmap ((++) "  ") body)
+nasmDeclaration (GlobalVariable   n t (IntegerLiteral l)) _     = n ++ ": "  ++ nasmType t ++ " " ++ show l
+nasmDeclaration (ConstantVariable n t (IntegerLiteral l)) _     = n ++ ": "  ++ nasmType t ++ " " ++ show l
 
+litType :: Literal -> Result TypeId
+litType l@(IntegerLiteral x) | x >= 0   && x < 65536 = Right 2
+                             | otherwise             = Left (BackendError (show l ++ " is not in [0; 65536)"))
 
-runNasm :: [(Section, Declaration, Tree [Instruction])] -> String
-runNasm = join . map mapper
-    where mapper (s, d, t) = nasmSection s [nasmDeclaration t d]
+nasmTypes = TypeConfig 
+    { types = (fmap . first) TypeName [("int8", 8), ("int16", 16), ("+literal+", 16)]
+    , pointerType = 1
+    , registers = zip (join $ fmap (\x -> fmap ((:) x . pure) "lhx") "abcd") (cycle [0, 0, 1])
+    , typeCasts = buildG (0, 3) [(0, 2), (1, 2)]
+    , literalType = litType }
 
+nasm = Backend 
+    { instruction = nasm16I
+    , bodyWrap    = id
+    , indent      = "  "
+    , section     = nasmSection
+    , declaration = nasmDeclaration
+    , typeConfig  = nasmTypes }

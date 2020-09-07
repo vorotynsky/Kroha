@@ -1,25 +1,28 @@
 module Kroha where
 
-import           Control.Monad.Zip (munzip, mzip)
-import           Data.Bifunctor    (first)
-import           Data.Tree         (Tree (..), drawTree)
+import           Control.Monad.Zip     (mzip)
+import           Data.Bifunctor        (first)
+import           Data.Tree             (Tree (..))
 
-import           Kroha.Ast         (FrameElement (..), selectorProg)
-import           Kroha.Parser      (parse)
-import           Kroha.Scope       (linkProgram, linksTree)
-import           Kroha.Stack       (stack)
-import           Kroha.Types       (resolve, typeCasts)
-import           Kroha.Instructions(instructions)
-import           Kroha.Backends.Nasm (runNasm)
+import           Kroha.Parser          (parse)
+import           Kroha.Ast             (FrameElement (Instructions), selectorProg)
+import           Kroha.Scope           (linkProgram, linksTree)
+import           Kroha.Types           (resolve, typeCastsTree, TypeConfig(..))
+import           Kroha.Stack           (stack)
+import           Kroha.Instructions    (instructions)
+import           Kroha.Backends.Common (runBackend, Backend(typeConfig))
+import           Kroha.Backends.Nasm   (nasm)
 
 
 kroha :: String -> Either String String
-kroha src = compile
+kroha src = first show compile
     where compile = do
-                    program <- first id   $ parse src
-                    scopes  <- first show $ linkProgram program
+                    program <- parse src
+                    scopes  <- linkProgram program
                     let programTree = Node (Instructions []) (selectorProg (const $ Instructions []) id program)
-                    types   <- first show $ resolve 16 . typeCasts $ mzip (linksTree program) scopes
-                    let stackRanges = stack 16 program
+                    let tc = (typeConfig nasm)
+                    casts   <- (typeCastsTree tc $ mzip (linksTree program) scopes)
+                    types   <- resolve tc casts
+                    let stackRanges = stack tc program
                     let prepared = instructions stackRanges scopes program
-                    return (runNasm prepared)
+                    return (runBackend nasm prepared)

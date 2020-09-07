@@ -1,11 +1,12 @@
 module Kroha.Scope where
 
-import Control.Monad (join)
 import Control.Monad.Zip (mzip, munzip, mzipWith)
 import Data.Maybe (mapMaybe)
 import Data.Tree (Tree(..))
+import Data.Bifunctor (first)
 
 import Kroha.Ast
+import Kroha.Errors
 
 data ScopeEffect 
     = FluentScope
@@ -62,12 +63,17 @@ scopeTree parent (Node effect childs) = Node (effect:parent) childScope
     where folder acc child = (rootLabel child : fst acc, snd acc ++ [scopeTree (fst acc) child])
           childScope = snd $ foldl folder (effect:parent, []) childs
 
-linkScope :: Tree ([ScopeEffect], Scope) -> Either (ScopeEffect) (Tree Scope)
-linkScope (Node (request, scope) childs) = join . fmap buildTree $ results
-    where results = traverse (\r -> findEither r scope >>= return . (,) r) request
-          buildTree request = sequence . traverse (Node request) $ traverse linkScope childs
+linkScope :: Tree ([ScopeEffect], Scope) -> Result (Tree Scope)
+linkScope = sequenceErrors JoinedError . fmap (first scopeError . result)
+    where result (request, scope) = traverse (\r -> findEither r scope >>= return . (,) r) request
+          scopeError (VariableScope var) = VariableNotFound var
+          scopeError (LabelScope label)  = LabelNotFound label
 
-linkProgram :: Program -> Either (ScopeEffect) (Tree Scope)
+declarationScope :: Program -> Scope
+declarationScope p@(Program declarations) = fmap (\(el, id) -> (dscope el, DeclarationLink el id)) $ zip declarations ids
+    where ids = let (Node _ forest) = progId p in fmap rootLabel forest
+
+linkProgram :: Program -> Result (Tree Scope)
 linkProgram program = linkScope (mzip requests scope)
     where (changes, requests) = munzip (localScope program)
-          scope = scopeTree [] (mzip changes (linksTree program))
+          scope = scopeTree (declarationScope program) (mzip changes (linksTree program))

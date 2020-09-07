@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           Kroha
-version:        1.0.0.0
+version:        1.1.0.0
 description:    Please see the README on GitHub at <https://github.com/vorotynsky/HLasm#readme>
 homepage:       https://github.com/vorotynsky/HLasm#readme
 bug-reports:    https://github.com/vorotynsky/HLasm/issues
@@ -27,7 +27,9 @@ executable Kroha
   other-modules:
       Kroha
       Kroha.Ast
+      Kroha.Backends.Common
       Kroha.Backends.Nasm
+      Kroha.Errors
       Kroha.Instructions
       Kroha.Parser
       Kroha.Scope
