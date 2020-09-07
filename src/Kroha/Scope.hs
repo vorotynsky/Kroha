@@ -1,6 +1,5 @@
 module Kroha.Scope where
 
-import Control.Monad (join)
 import Control.Monad.Zip (mzip, munzip, mzipWith)
 import Data.Maybe (mapMaybe)
 import Data.Tree (Tree(..))

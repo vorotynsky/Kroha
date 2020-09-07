@@ -3,8 +3,7 @@
 module Kroha.Types where
 
 import Data.Graph (Tree(..), Graph(..), path)
-import Data.Bifunctor (bimap, first)
-import Data.Maybe (isJust, fromJust)
+import Data.Bifunctor (bimap)
 import Control.Monad (join)
 import Data.List.Extra (elemIndex)
 import Data.Either.Extra (maybeToEither)
