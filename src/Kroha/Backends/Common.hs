@@ -26,8 +26,9 @@ makeFix backend (Node i c) = join . fmap asmFix $ i
 
 unindentManual :: String -> [String]
 unindentManual code = fmap (drop minIndent) lined
-    where lined = lines code
-          minIndent = getMin $ foldMap (Min . length . takeWhile isSpace) lined
+    where lined = let (h:t) = (\l -> if null l then [""] else l) $ lines code in if null h then t else h:t
+          filterEmpty = filter (not . null . filter (not . isSpace))
+          minIndent = getMin . foldMap (Min . length . takeWhile isSpace) . filterEmpty $ lined
 
 backendDeclaration :: Backend -> Declaration -> Tree [Instruction] -> String
 backendDeclaration b decl@(Frame _ frame)          ti = declaration b decl (makeFix b ti)

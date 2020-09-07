@@ -50,11 +50,12 @@ nasmType (TypeName "int8" ) = "db"
 nasmType (TypeName "int16") = "dw"
 
 nasmDeclaration :: Declaration -> [String] -> String
-nasmDeclaration (Frame l _)                               body = l ++ ":\n" ++ intercalate "\n" body ++ "\nleave\nret\n"
-nasmDeclaration (ManualFrame l _)                         body = l ++ ":\n" ++ intercalate "\n" body ++"\n"
-nasmDeclaration (ManualVariable v _ _)                    body = v ++ ": "  ++ intercalate "\n" body ++"\n"
-nasmDeclaration (GlobalVariable   n t (IntegerLiteral l)) _    = n ++ ": "  ++ nasmType t ++ " " ++ show l ++"\n"
-nasmDeclaration (ConstantVariable n t (IntegerLiteral l)) _    = n ++ ": "  ++ nasmType t ++ " " ++ show l ++"\n"
+nasmDeclaration (Frame l _)                               body  = l ++ ":\n" ++ intercalate "\n" body ++ "\nleave\nret\n"
+nasmDeclaration (ManualVariable v _ _)                   [body] = v ++ ": "  ++ body ++ "\n"
+nasmDeclaration (ManualFrame l _)                         body  = l ++ ":\n" ++ intercalate "\n" (fmap ((++) "  ") body)
+nasmDeclaration (ManualVariable v _ _)                    body  = v ++ ":\n" ++ intercalate "\n" (fmap ((++) "  ") body)
+nasmDeclaration (GlobalVariable   n t (IntegerLiteral l)) _     = n ++ ": "  ++ nasmType t ++ " " ++ show l
+nasmDeclaration (ConstantVariable n t (IntegerLiteral l)) _     = n ++ ": "  ++ nasmType t ++ " " ++ show l
 
 litType :: Literal -> Result TypeId
 litType l@(IntegerLiteral x) | x >= 0   && x < 65536 = Right 2
