@@ -24,12 +24,16 @@ data TypeConfig = TypeConfig
 types' tc (PointerType _) = Right (pointerType tc)
 types' tc t               = maybeToEither (UnknownType t) (t `elemIndex` (fst . unzip . types $ tc))
     
+declType :: Declaration -> TypeName
+declType (GlobalVariable   _ t _) = t
+declType (ConstantVariable _ t _) = t
+declType (ManualVariable   _ t _) = t
+
+
 getType :: (?tc :: TypeConfig) => ScopeLink -> Result TypeId
 getType (ElementLink (VariableDeclaration (RegisterVariable _ r)) _) = firstE UnknownRegister $ findEither r (registers ?tc)
 getType (ElementLink (VariableDeclaration (StackVariable    _ t)) _) = types' ?tc t
-getType (DeclarationLink (GlobalVariable   _ t _) _)                 = types' ?tc t
-getType (DeclarationLink (ConstantVariable _ t _) _)                 = types' ?tc t
-getType (DeclarationLink (ManualVariable   _ t _) _)                 = types' ?tc t
+getType (DeclarationLink declaration _)                              = types' ?tc (declType declaration)
 getType _                                                            = Left (error "unexpected type error")
 
 

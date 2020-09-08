@@ -7,6 +7,7 @@ import Control.Monad.Fix (fix)
 import Control.Monad (join)
 import Data.List.Extra (groupSort)
 import Data.Bifunctor (first)
+import Data.Maybe (fromJust)
 
 import Kroha.Ast
 import Kroha.Backends.Common
@@ -21,11 +22,22 @@ label (CommonLabel l) = l
 label (BeginLabel  l) = l ++ "_begin"
 label (EndLabel    l) = l ++ "_end"
 
-target :: Target -> String
-target (LiteralTarget (IntegerLiteral num)) = show num
-target (StackTarget (offset, _))            = "[bp - " ++ show (bytes offset) ++ "]"
-target (RegisterTarget reg)                 = reg
-target (VariableTarget name)                = '[' : name ++ "]"
+nasmType :: TypeName -> (String, String)
+nasmType (TypeName "int8" ) = ("db", "byte")
+nasmType (TypeName "int16") = ("dw", "word")
+nasmType (PointerType    _) = ("dw", "word")
+
+size2type :: Int -> TypeName
+nasmTypeG , nasmTypeL, untyped :: TypeName -> String
+(nasmTypeG, nasmTypeL, untyped) = (fst . nasmType, append " " . snd . nasmType, const "")
+    where append x s = s ++ x
+
+
+target :: (TypeName -> String) -> Target -> String
+target tf (LiteralTarget (IntegerLiteral num)) = show num
+target tf (StackTarget (offset, s))            = (tf . size2type) s ++ "[bp - " ++ show (bytes offset) ++ "]"
+target tf (RegisterTarget reg)                 = reg
+target tf (VariableTarget name t)              = tf t ++ "[" ++ name ++ "]"
 
 jump :: Comparator -> String
 jump Equals    = "je"
@@ -36,26 +48,22 @@ jump Greater   = "jg"
 nasm16I (Body _ i)                   = []
 nasm16I (Assembly asm)               = [asm]
 nasm16I (Label lbl)                  = [label lbl ++ ":"]
-nasm16I (Move l r)                   = ["mov " ++ target l ++ ", " ++ target r]
-nasm16I (CallI l args)               = (fmap (((++) "push ") . target) . reverse $ args) ++ ["call " ++ label l, "add sp, " ++ show ((length args) * 2)]
+nasm16I (Move l r)                   = ["mov " ++ target nasmTypeL l ++ ", " ++ target untyped r]
+nasm16I (CallI l args)               = (fmap (((++) "push ") . target nasmTypeL) . reverse $ args) ++ ["call " ++ label l, "add sp, " ++ show ((length args) * 2)]
 nasm16I (Jump l Nothing)             = ["jmp " ++ label l]
-nasm16I (Jump lbl (Just (l, c, r)))  = ["cmp " ++ target l ++ ", " ++ target r, jump c ++ " " ++ label lbl]
+nasm16I (Jump lbl (Just (l, c, r)))  = ["cmp " ++ target nasmTypeL l ++ ", " ++ target untyped r, jump c ++ " " ++ label lbl]
 
 nasmSection :: Section -> String -> String
 nasmSection section body = header <> body <> "\n\n"
     where header = "section ." ++ section ++ "\n"
-
-nasmType :: TypeName -> String
-nasmType (TypeName "int8" ) = "db"
-nasmType (TypeName "int16") = "dw"
 
 nasmDeclaration :: Declaration -> [String] -> String
 nasmDeclaration (Frame l _)                               body  = l ++ ":\n" ++ intercalate "\n" body ++ "\nleave\nret\n"
 nasmDeclaration (ManualVariable v _ _)                   [body] = v ++ ": "  ++ body ++ "\n"
 nasmDeclaration (ManualFrame l _)                         body  = l ++ ":\n" ++ intercalate "\n" (fmap ((++) "  ") body)
 nasmDeclaration (ManualVariable v _ _)                    body  = v ++ ":\n" ++ intercalate "\n" (fmap ((++) "  ") body)
-nasmDeclaration (GlobalVariable   n t (IntegerLiteral l)) _     = n ++ ": "  ++ nasmType t ++ " " ++ show l
-nasmDeclaration (ConstantVariable n t (IntegerLiteral l)) _     = n ++ ": "  ++ nasmType t ++ " " ++ show l
+nasmDeclaration (GlobalVariable   n t (IntegerLiteral l)) _     = n ++ ": "  ++ nasmTypeG t ++ " " ++ show l
+nasmDeclaration (ConstantVariable n t (IntegerLiteral l)) _     = n ++ ": "  ++ nasmTypeG t ++ " " ++ show l
 
 litType :: Literal -> Result TypeId
 litType l@(IntegerLiteral x) | x >= 0   && x < 65536 = Right 2
@@ -67,6 +75,8 @@ nasmTypes = TypeConfig
     , registers = zip (join $ fmap (\x -> fmap ((:) x . pure) "lhx") "abcd") (cycle [0, 0, 1])
     , typeCasts = buildG (0, 3) [(0, 2), (1, 2)]
     , literalType = litType }
+
+size2type size = fromJust . lookup size . fmap (\(a, b) -> (b, a)) $ (types nasmTypes)
 
 nasm = Backend 
     { instruction = nasm16I
