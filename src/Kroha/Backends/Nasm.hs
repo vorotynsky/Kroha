@@ -38,6 +38,7 @@ target tf (LiteralTarget (IntegerLiteral num)) = show num
 target tf (StackTarget (offset, s))            = (tf . size2type) s ++ "[bp - " ++ show (bytes offset) ++ "]"
 target tf (RegisterTarget reg)                 = reg
 target tf (VariableTarget name t)              = tf t ++ "[" ++ name ++ "]"
+target tf (DereferencedTarget t)               = "[" ++ target tf t ++ "]"
 
 jump :: Comparator -> String
 jump Equals    = "je"

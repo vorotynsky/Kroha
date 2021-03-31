@@ -17,6 +17,7 @@ data ScopeEffect
 requestVars :: [RValue] -> [ScopeEffect]
 requestVars = mapMaybe (fmap VariableScope . rvalueScope)
     where rvalueScope (AsRValue (VariableLVal name)) = Just name
+          rvalueScope (DeRef    (VariableLVal name)) = Just name
           rvalueScope _                              = Nothing 
 
 scope :: Selector (ScopeEffect, [ScopeEffect])

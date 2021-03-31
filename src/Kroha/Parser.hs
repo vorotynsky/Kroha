@@ -38,7 +38,7 @@ literal = IntegerLiteral <$> nat
 literal' = aparse literal
 lvalue' = (VariableLVal <$> name) <|> (RegisterLVal <$> (char '%' *> name))
 lvalue = aparse lvalue'
-rvalue' = (RLiteral<$> literal) <|> (AsRValue <$> lvalue')
+rvalue' = (RLiteral<$> literal) <|> (AsRValue <$> lvalue') <|> (DeRef <$> (achar '*' *> lvalue'))
 rvalue = aparse rvalue'
 
 break  = Break  <$> (keyword "break" *> parens name)

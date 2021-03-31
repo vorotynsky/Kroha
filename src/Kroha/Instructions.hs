@@ -20,6 +20,7 @@ data Target
     | StackTarget StackRange
     | RegisterTarget RegisterName
     | VariableTarget VariableName TypeName
+    | DereferencedTarget Target
     deriving (Show)
 
 data LabelTarget 
@@ -48,6 +49,7 @@ link2target _ (DeclarationLink declaration _) = let (VariableScope name) = dscop
 target :: StackOffsetTree -> Scope -> RValue -> Target
 target so s (AsRValue (VariableLVal var)) = link2target so . fromJust . lookup (VariableScope var) $ s
 target _  _ (AsRValue (RegisterLVal reg)) = RegisterTarget reg
+target so s (DeRef value)                 = DereferencedTarget $ target so s (AsRValue value)
 target _  _ (RLiteral literal)            = LiteralTarget literal
 
 transformCond sot s (Condition (left, cmp, right)) = (target sot s left, cmp, target sot s right)

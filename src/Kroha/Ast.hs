@@ -15,7 +15,7 @@ data TypeName
     | PointerType TypeName    
     deriving (Show, Eq)
 
-data Literal
+newtype Literal
     = IntegerLiteral Int
     deriving (Show, Eq)
 
@@ -27,6 +27,7 @@ data LValue
 data RValue
     = AsRValue LValue
     | RLiteral Literal
+    | DeRef LValue
     deriving (Show, Eq)
 
 data LocalVariable
