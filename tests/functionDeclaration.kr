@@ -1,0 +1,5 @@
+program {
+    frame start {
+        !nop
+    }
+}

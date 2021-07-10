@@ -58,7 +58,7 @@ nasmSection section body = header <> body <> "\n\n"
     where header = "section ." ++ section ++ "\n"
 
 nasmDeclaration :: Declaration -> [String] -> String
-nasmDeclaration (Frame l _)                               body  = l ++ ":\n" ++ intercalate "\n" body ++ "\nleave\nret\n"
+nasmDeclaration (Frame l _)                               body  = l ++ ":\n" ++ intercalate "\n" body ++ "\nleave\nret"
 nasmDeclaration (ManualVariable v _ _)                   [body] = v ++ ": "  ++ body ++ "\n"
 nasmDeclaration (ManualFrame l _)                         body  = l ++ ":\n" ++ intercalate "\n" (fmap ((++) "  ") body)
 nasmDeclaration (ManualVariable v _ _)                    body  = v ++ ":\n" ++ intercalate "\n" (fmap ((++) "  ") body)
