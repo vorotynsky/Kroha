@@ -4,3 +4,8 @@ start:
 leave
 ret
 
+section .text
+mf:
+  add ax, dx
+  
+

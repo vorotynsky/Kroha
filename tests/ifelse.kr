@@ -1,0 +1,27 @@
+program {
+  frame ifelse_eq {
+    reg x : ax
+    
+    if (x == 5, A) {
+      !dec ax
+    }
+    else {
+      !inc ax
+    }
+
+    !nop
+  }
+
+  frame ifelse_comp {
+    reg x : ax
+
+    if (x < 5, B) {
+      !dec ax
+    }
+    else {
+      !inc ax
+    }
+
+    !nop
+  }
+}

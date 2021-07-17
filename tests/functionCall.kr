@@ -1,0 +1,10 @@
+program {
+  frame justFunc {
+    !nop
+  }
+
+  frame callFunction {
+    call <justFunc>()
+    !nop
+  }
+}
