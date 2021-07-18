@@ -3,26 +3,28 @@
 Improve your assembly experience with Kroha!
 This language is more comfortable than a pure assembly.
 
-## Example
+## Examples
 
 Instead of documentation
+
+You can find [more examples here](./test/examples).
 
 ### Frames
 
 ```asm
 program {
-    manual frame act {
-        mov ax, [bp-4]
-        inc ax
-        leave
-        ret
-    }
+  manual frame act {
+    mov ax, [bp-4]
+    inc ax
+    leave
+    ret
+  }
 
-    frame main {
-        reg a : ax
-        a = 5
-        call <act> (a)
-    }
+  frame main {
+    reg a : ax
+    a = 5
+    call <act> (a)
+  }
 }
 ```
 
@@ -51,23 +53,23 @@ ret
 
 ```asm
 program {
-    var a : int16 = 32
-    var b : int8 = 1
-    const c : int16 = 32
-    const d : int8 = 1
+  var a : int16 = 32
+  var b : int8 = 1
+  const c : int16 = 32
+  const d : int8 = 1
 
-    manual var arr : &int8 {
-        times 64 db 0
-    }
+  manual var arr : &int8 {
+    times 64 db 0
+  }
 
-    frame main {
-        reg ra : ax
-        reg ptr : bx
-        var sb : int16
-        ra = 5
-        sb = 6
-        ptr = b
-    }
+  frame main {
+    reg ra : ax
+    reg ptr : bx
+    var sb : int16
+    ra = 5
+    sb = 6
+    ptr = b
+  }
 }
 ```
 
@@ -88,7 +90,7 @@ d: db 1
 
 section .data
 arr: 
-        times 64 db 0
+  times 64 db 0
     
 
 section .text
@@ -104,20 +106,20 @@ ret
 
 ```asm
 program {
-    frame main {
-        reg val : ax
-        val = 0
+  frame main {
+    reg val : ax
+    val = 0
 
-        loop (LOOP) {
-            if (val > 5, CMP) {
-                break (LOOP)
-            }
-            else {
-                !dec bx
-            }
-            !inc ax
-        }
+    loop (LOOP) {
+      if (val > 5, CMP) {
+        break (LOOP)
+      }
+      else {
+        !dec bx
+      }
+      !inc ax
     }
+  }
 }
 ```
 
@@ -128,19 +130,22 @@ section .text
 main:
   mov ax, 0
   LOOP_begin:
-      cmp ax, 5
-      jg CMP_begin
-          dec bx
-      jmp CMP_end
-      CMP_begin:
-          jmp LOOP_end
-      CMP_end:
-      inc ax
+    cmp ax, 5
+    jg CMP_begin
+      dec bx
+    jmp CMP_end
+    CMP_begin:
+      jmp LOOP_end
+    CMP_end:
+    inc ax
   jmp LOOP_begin
   LOOP_end:
 leave
 ret
 ```
+
+Check [more examples](./test/examples).
+
 
 ## Build and install
 
