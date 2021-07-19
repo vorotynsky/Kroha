@@ -36,4 +36,5 @@ tests:
     - src
     main:             Spec.hs
     dependencies:
-    - HUnit
+    - HUnit == 1.6.*
+    - Diff >= 0.2 && < 0.5
