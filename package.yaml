@@ -28,3 +28,13 @@ executables:
   Kroha:
     source-dirs:      src
     main:             Main.hs
+
+tests:
+  Kroha-tests:
+    source-dirs:      
+    - test
+    - src
+    main:             Spec.hs
+    dependencies:
+    - HUnit == 1.6.*
+    - Diff >= 0.2 && < 0.5

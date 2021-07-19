@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.2.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 
@@ -40,7 +40,36 @@ executable Kroha
       src
   build-depends:
       base >=4.7 && <5
-    , containers >=0.6 && <0.7
+    , containers ==0.6.*
+    , extra >=1.0 && <1.8
+    , parsec >=3.1.0 && <=3.1.14.0
+  default-language: Haskell2010
+
+test-suite Kroha-tests
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Case
+      Kroha
+      Kroha.Ast
+      Kroha.Backends.Common
+      Kroha.Backends.Nasm
+      Kroha.Errors
+      Kroha.Instructions
+      Kroha.Parser
+      Kroha.Scope
+      Kroha.Stack
+      Kroha.Types
+      Main
+      Paths_Kroha
+  hs-source-dirs:
+      test
+      src
+  build-depends:
+      Diff >=0.2 && <0.5
+    , HUnit ==1.6.*
+    , base >=4.7 && <5
+    , containers ==0.6.*
     , extra >=1.0 && <1.8
     , parsec >=3.1.0 && <=3.1.14.0
   default-language: Haskell2010
