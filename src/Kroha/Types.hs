@@ -1,3 +1,5 @@
+-- Copyright (c) 2020 - 2021 Vorotynsky Maxim
+
 {-# LANGUAGE ImplicitParams #-}
 
 module Kroha.Types where
@@ -24,10 +26,10 @@ data TypeConfig = TypeConfig
 types' tc (PointerType _) = Right (pointerType tc)
 types' tc t               = maybeToEither (UnknownType t) (t `elemIndex` (fst . unzip . types $ tc))
     
-declType :: Declaration -> TypeName
-declType (GlobalVariable   _ t _) = t
-declType (ConstantVariable _ t _) = t
-declType (ManualVariable   _ t _) = t
+declType :: Declaration d -> TypeName
+declType (GlobalVariable   _ t _ _) = t
+declType (ConstantVariable _ t _ _) = t
+declType (ManualVariable   _ t _ _) = t
 
 
 getType :: (?tc :: TypeConfig) => ScopeLink -> Result TypeId

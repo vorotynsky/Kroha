@@ -1,4 +1,4 @@
--- Copyright (c) 2020 Vorotynsky Maxim
+-- Copyright (c) 2020 - 2021 Vorotynsky Maxim
 
 {-# LANGUAGE FlexibleContexts #-}
 
@@ -20,6 +20,8 @@ nat = fmap read (many1 digit)
 
 aparse :: Parser a -> Parser a
 aparse  = let spaces = many space in between spaces spaces
+
+krP p = p <*> pure ()
 
 achar   = aparse . char
 keyword word = aparse $ try (string word <* space)
@@ -45,8 +47,8 @@ break  = Break  <$> (keyword "break" *> parens name)
 inline = Inline <$> aparse (char '!' *> many (noneOf "\n"))
 call   = Call   <$> (keyword "call" *> angles name) <*> parens (rvalue `sepBy` achar ',')
 
-vtype = PointerType <$> (achar '&' *> vtype) 
-    <|> TypeName <$> name  
+vtype = PointerType <$> (achar '&' *> vtype)
+    <|> TypeName <$> name
 
 register = aparse $ VariableDeclaration <$> (RegisterVariable <$> (keyword "reg" *> name) <*> (achar ':' *> name ))
 variable = aparse $ VariableDeclaration <$> (StackVariable    <$> (keyword "var" *> name) <*> (achar ':' *> vtype))
@@ -90,8 +92,8 @@ manualVar = manual "var" (ManualVariable <$> (aparse $ name) <*> (achar ':' *> v
 frame p = Frame <$> fname <*> block p
     where fname = (keyword "frame" *> name)
 
-globals = frame hlasm <|> constant <|> globvar <|> manualFrame <|> manualVar
+globals = krP $ frame hlasm <|> constant <|> globvar <|> manualFrame <|> manualVar
 program = keyword "program" *> braces (many globals)
 
-parse :: String -> Result Program
-parse = bimap (ParserError . show) Program . Text.Parsec.parse program ""
+parse :: String -> Result (Program ())
+parse = bimap (ParserError . show) (`Program` ()) . Text.Parsec.parse program ""

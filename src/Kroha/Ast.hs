@@ -1,4 +1,6 @@
--- Copyright (c) 2020 Vorotynsky Maxim
+-- Copyright (c) 2020 - 2021 Vorotynsky Maxim
+
+{-# LANGUAGE DeriveFunctor #-}
 
 module Kroha.Ast where
 
@@ -54,16 +56,16 @@ data FrameElement
     deriving (Show, Eq)
 
 
-data Declaration
-    = Frame Label FrameElement
-    | GlobalVariable VariableName TypeName Literal
-    | ConstantVariable VariableName TypeName Literal
-    | ManualFrame Label InlinedCode
-    | ManualVariable VariableName TypeName InlinedCode 
-    deriving (Show, Eq)
+data Declaration d
+    = Frame Label FrameElement d
+    | GlobalVariable VariableName TypeName Literal d
+    | ConstantVariable VariableName TypeName Literal d
+    | ManualFrame Label InlinedCode d
+    | ManualVariable VariableName TypeName InlinedCode d
+    deriving (Show, Eq, Functor)
 
-newtype Program = Program [Declaration]
-    deriving (Show, Eq)
+data Program d = Program [Declaration d] d
+    deriving (Show, Eq, Functor)
 
 type Selector a = FrameElement -> a
 
@@ -84,10 +86,10 @@ selectorM :: Monad m => Selector (m a) -> FrameElement -> m (Tree a)
 selectorM s = unfoldTreeM (\e -> s e >>= (\x -> return (x, childs e)))
 
 
-selectorProg :: (Declaration -> a) -> Selector a -> Program -> Forest a
-selectorProg df sf (Program declarations) = fmap mapper declarations
-    where mapper d@(Frame _ frame) = Node (df d) [selector sf frame]
-          mapper declaration = Node (df declaration) []
+selectorProg :: (Declaration d -> a) -> Selector a -> Program d -> Forest a
+selectorProg df sf (Program declarations _) = fmap mapper declarations
+    where mapper d@(Frame _ frame _)        = Node (df d) [selector sf frame]
+          mapper declaration                = Node (df declaration) []
 
 
 type NodeId = Int
@@ -95,5 +97,5 @@ type NodeId = Int
 genId :: Tree a -> Tree NodeId
 genId = snd . mapAccumR (\ac b -> (ac + 1, ac)) 0
 
-progId :: Program -> Tree NodeId
+progId :: Program d -> Tree NodeId
 progId program = genId $ Node () (selectorProg (const ()) (const ()) program)

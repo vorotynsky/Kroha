@@ -18,10 +18,10 @@ frame :: TypeConfig -> Tree FrameElement -> (Int, Tree StackRange)
 frame ptr tree = mapAccumL f 0 tree
     where f acc el = let size = stackVar ptr el in (acc + size, (if size > 0 then acc + size else 0, size))
 
-stackFrames :: TypeConfig -> Program -> [(Int, Tree StackRange)]
-stackFrames ptr (Program declarations) = fmap mapper declarations
-    where mapper (Frame _ f) = frame ptr (selector id f)
-          mapper _           = (0, Node (0, 0) [])
+stackFrames :: TypeConfig -> Program d -> [(Int, Tree StackRange)]
+stackFrames ptr (Program declarations _) = fmap mapper declarations
+    where mapper (Frame _ f _) = frame ptr (selector id f)
+          mapper _             = (0, Node (0, 0) [])
 
-stack :: TypeConfig -> Program -> Tree StackRange
+stack :: TypeConfig -> Program d -> Tree StackRange
 stack ptr program = Node (0, 0) (fmap (Node (0, 0) . pure . snd) (stackFrames ptr program))

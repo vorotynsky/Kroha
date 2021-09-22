@@ -1,4 +1,4 @@
--- Copyright (c) 2020 Vorotynsky Maxim
+-- Copyright (c) 2020 - 2021 Vorotynsky Maxim
 
 module Kroha.Instructions where
 
@@ -15,14 +15,14 @@ import Kroha.Types
 
 type Section = String
 
-data Target 
+data Target
     = LiteralTarget Literal
     | StackTarget StackRange
     | RegisterTarget RegisterName
     | VariableTarget VariableName TypeName
     deriving (Show)
 
-data LabelTarget 
+data LabelTarget
     = CommonLabel Label
     | BeginLabel  Label
     | EndLabel    Label
@@ -63,9 +63,9 @@ instruction sot s (Kroha.Ast.If name cond t f)      = [ Jump (BeginLabel name) (
                                                           Body t 0,
                                                         Label (EndLabel name) ]
 
-instruction _   _ (Kroha.Ast.Loop name body)        = [ Label (BeginLabel name), 
-                                                          Body body 0, 
-                                                          Jump (BeginLabel name) Nothing, 
+instruction _   _ (Kroha.Ast.Loop name body)        = [ Label (BeginLabel name),
+                                                          Body body 0,
+                                                          Jump (BeginLabel name) Nothing,
                                                         Label (EndLabel name) ]
 
 instruction _   _ (Kroha.Ast.Break loop)            = [ Jump (EndLabel loop) Nothing ]
@@ -74,19 +74,19 @@ instruction sot s (Kroha.Ast.Assignment l r)        = [ Move (target sot s (AsRV
 instruction _   _ (Kroha.Ast.Inline asm)            = [ Assembly asm ]
 
 
-declSection :: Declaration -> Section
-declSection (Frame _ _)              = "text"
-declSection (GlobalVariable _ _ _)   = "data"
-declSection (ConstantVariable _ _ _) = "rodata"
-declSection (ManualFrame _ _)        = "text"
-declSection (ManualVariable _ _ _)   = "data"
+declSection :: Declaration d -> Section
+declSection Frame { }            = "text"
+declSection GlobalVariable { }   = "data"
+declSection ConstantVariable { } = "rodata"
+declSection ManualFrame { }      = "text"
+declSection ManualVariable { }   = "data"
 
 
-buildDeclaration :: StackOffsetTree -> Tree Scope -> Declaration -> (Section, Declaration, Tree [Instruction])
-buildDeclaration sot (Node _ [scope]) d@(Frame _ frame) = (declSection d, d, instructions)
+buildDeclaration :: StackOffsetTree -> Tree Scope -> Declaration d -> (Section, Declaration d, Tree [Instruction])
+buildDeclaration sot (Node _ [scope]) d@(Frame _ frame _) = (declSection d, d, instructions)
     where instructions = mzipWith (instruction sot) scope (selector id frame)
 buildDeclaration _ _ d = (declSection d, d, Node [] [])
 
-instructions :: Tree StackRange -> Tree Scope -> Program -> [(Section, Declaration, Tree [Instruction])]
-instructions offsets (Node _ scopes) p@(Program declarations) = mzipWith (buildDeclaration sot) scopes declarations
+instructions :: Tree StackRange -> Tree Scope -> Program d -> [(Section, Declaration d, Tree [Instruction])]
+instructions offsets (Node _ scopes) p@(Program declarations _) = mzipWith (buildDeclaration sot) scopes declarations
     where sot = mzip (progId p) offsets

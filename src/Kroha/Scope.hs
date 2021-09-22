@@ -1,3 +1,5 @@
+-- Copyright (c) 2020 - 2021 Vorotynsky Maxim
+
 module Kroha.Scope where
 
 import Control.Monad.Zip (mzip, munzip, mzipWith)
@@ -7,8 +9,9 @@ import Data.Bifunctor (first)
 
 import Kroha.Ast
 import Kroha.Errors
+import Control.Monad (void)
 
-data ScopeEffect 
+data ScopeEffect
     = FluentScope
     | VariableScope VariableName
     | LabelScope Label
@@ -17,7 +20,7 @@ data ScopeEffect
 requestVars :: [RValue] -> [ScopeEffect]
 requestVars = mapMaybe (fmap VariableScope . rvalueScope)
     where rvalueScope (AsRValue (VariableLVal name)) = Just name
-          rvalueScope _                              = Nothing 
+          rvalueScope _                              = Nothing
 
 scope :: Selector (ScopeEffect, [ScopeEffect])
 scope (Instructions _)                                = (FluentScope         , [])
@@ -30,12 +33,12 @@ scope (Call label args)                               = (FluentScope         , L
 scope (Assignment lval rval)                          = (FluentScope         , requestVars [AsRValue lval, rval])
 scope (Inline _)                                      = (FluentScope         , [])
 
-dscope :: Declaration -> ScopeEffect
-dscope (Frame label _)             = LabelScope    label
-dscope (GlobalVariable name _ _)   = VariableScope name
-dscope (ConstantVariable name _ _) = VariableScope name
-dscope (ManualFrame label _)       = LabelScope    label
-dscope (ManualVariable name _ _)   = VariableScope name
+dscope :: Declaration d -> ScopeEffect
+dscope (Frame label _ _)             = LabelScope    label
+dscope (GlobalVariable name _ _ _)   = VariableScope name
+dscope (ConstantVariable name _ _ _) = VariableScope name
+dscope (ManualFrame label _ _)       = LabelScope    label
+dscope (ManualVariable name _ _ _)   = VariableScope name
 
 dscope' d = (dscope d, [] :: [ScopeEffect])
 
@@ -48,15 +51,15 @@ findEither k = toRight k . lookup k
 
 data ScopeLink
     = ElementLink FrameElement NodeId
-    | DeclarationLink Declaration NodeId
+    | DeclarationLink (Declaration ()) NodeId
     | RootProgramLink NodeId
     deriving (Show)
 
-localScope :: Program -> Tree (ScopeEffect, [ScopeEffect])
+localScope :: Program d -> Tree (ScopeEffect, [ScopeEffect])
 localScope program = Node (FluentScope, []) (selectorProg dscope' scope program)
 
-linksTree :: Program -> Tree ScopeLink
-linksTree program = mzipWith id (Node (RootProgramLink) (selectorProg DeclarationLink ElementLink program)) (progId program)
+linksTree :: Program d -> Tree ScopeLink
+linksTree program = mzipWith id (Node RootProgramLink (selectorProg DeclarationLink ElementLink (void program))) (progId program)
 
 scopeTree :: Scope -> Tree (ScopeEffect, ScopeLink) -> Tree Scope
 scopeTree parent (Node effect childs) = Node (effect:parent) childScope
@@ -69,11 +72,11 @@ linkScope = sequenceErrors JoinedError . fmap (first scopeError . result)
           scopeError (VariableScope var) = VariableNotFound var
           scopeError (LabelScope label)  = LabelNotFound label
 
-declarationScope :: Program -> Scope
-declarationScope p@(Program declarations) = fmap (\(el, id) -> (dscope el, DeclarationLink el id)) $ zip declarations ids
+declarationScope :: Program d -> Scope
+declarationScope p@(Program declarations _) = (\(el, id) -> (dscope el, DeclarationLink (void el) id)) <$> zip declarations ids
     where ids = let (Node _ forest) = progId p in fmap rootLabel forest
 
-linkProgram :: Program -> Result (Tree Scope)
+linkProgram :: Program d -> Result (Tree Scope)
 linkProgram program = linkScope (mzip requests scope)
     where (changes, requests) = munzip (localScope program)
           scope = scopeTree (declarationScope program) (mzip changes (linksTree program))
