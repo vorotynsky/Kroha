@@ -58,16 +58,16 @@ instruction _   _ (Kroha.Ast.Instructions f _)        = mzipWith Body f [0..]
 instruction _   _ (Kroha.Ast.VariableDeclaration _ _) = [  ]
 
 instruction sot s (Kroha.Ast.If name cond t f _)      = [ Jump (BeginLabel name) (Just $ transformCond sot s cond),
-                                                          Body f 1,
-                                                          Jump (EndLabel name) Nothing,
-                                                        Label (BeginLabel name),
-                                                          Body t 0,
-                                                        Label (EndLabel name) ]
+                                                            Body f 1,
+                                                            Jump (EndLabel name) Nothing,
+                                                          Label (BeginLabel name),
+                                                            Body t 0,
+                                                          Label (EndLabel name) ]
 
 instruction _   _ (Kroha.Ast.Loop name body _)        = [ Label (BeginLabel name),
-                                                          Body body 0,
-                                                          Jump (BeginLabel name) Nothing,
-                                                        Label (EndLabel name) ]
+                                                           Body body 0,
+                                                           Jump (BeginLabel name) Nothing,
+                                                         Label (EndLabel name) ]
 
 instruction _   _ (Kroha.Ast.Break loop _)            = [ Jump (EndLabel loop) Nothing ]
 instruction sot s (Kroha.Ast.Call name args _)        = [ CallI (CommonLabel name) (fmap (target sot s) args) ]

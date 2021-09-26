@@ -5,7 +5,7 @@ import           Data.Bifunctor        (first)
 import           Data.Tree             (Tree (..))
 
 import           Kroha.Parser          (parse)
-import           Kroha.Ast             (FrameElement (Instructions), selectorProg, genId)
+import           Kroha.Ast             (FrameElement (Instructions), selectorProg, genId, getDeclData, getFrameElementData)
 import           Kroha.Scope           (linkProgram, linksTree)
 import           Kroha.Types           (resolve, typeCastsTree, TypeConfig(..))
 import           Kroha.Stack           (stack)
@@ -26,5 +26,6 @@ kroha src = first show compile
                     casts   <- (typeCastsTree tc $ mzip (linksTree program) scopes)
                     types   <- resolve tc casts
                     let stackRanges = stack tc program
-                    let prepared = instructions stackRanges scopes program
+                    let stackRangesTree = Node (0, 0) $ selectorProg getDeclData getFrameElementData stackRanges
+                    let prepared = instructions stackRangesTree scopes program
                     return (runBackend nasm prepared)

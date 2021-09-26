@@ -1,6 +1,7 @@
 -- Copyright (c) 2020 - 2021 Vorotynsky Maxim
 
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Kroha.Ast where
 
@@ -117,3 +118,14 @@ genId (Program decls _) = Program (snd $ mapAccumR declId 1 decls) 0
 
 progId :: Program d -> Tree NodeId
 progId program = Node 0 $ selectorProg getDeclData getFrameElementData (genId program)
+
+
+duplicate :: FrameElement a -> FrameElement (FrameElement a)
+duplicate node@(Instructions c _)        = Instructions (map duplicate c) node
+duplicate node@(VariableDeclaration v _) = VariableDeclaration v node
+duplicate node@(If l c i e _)            = If l c (duplicate i) (duplicate e) node
+duplicate node@(Loop l b _)              = Loop l (duplicate b) node
+duplicate node@(Break l _)               = Break l node
+duplicate node@(Call l a _)              = Call l a node
+duplicate node@(Assignment l r _)        = Assignment l r node
+duplicate node@(Inline c _)              = Inline c node

@@ -1,8 +1,8 @@
 module Kroha.Stack where
 
-import Data.Tree
 import Data.List (mapAccumL)
 import Data.Maybe (fromJust)
+import Data.Functor (($>))
 
 import Kroha.Ast
 import Kroha.Types
@@ -14,14 +14,14 @@ stackVar tc (VariableDeclaration (StackVariable _ (PointerType _)) _) = snd $ ty
 stackVar tc (VariableDeclaration (StackVariable _ t@(TypeName _))  _) = fromJust $ lookup t (types tc)
 stackVar _   _                                                        = 0
 
-frame :: TypeConfig -> Tree (FrameElement d) -> (Int, Tree StackRange)
-frame ptr = mapAccumL f 0
-    where f acc el = let size = stackVar ptr el in (acc + size, (if size > 0 then acc + size else 0, size))
+frame :: TypeConfig -> FrameElement d -> FrameElement (Int, StackRange)
+frame ptr = snd . mapAccumL f 0 . duplicate
+    where f acc el = let size = stackVar ptr el in (acc + size, (acc, (if size > 0 then acc + size else 0, size)))
 
-stackFrames :: TypeConfig -> Program d -> [(Int, Tree StackRange)]
-stackFrames ptr (Program declarations _) = fmap mapper declarations
-    where mapper (Frame _ f _) = frame ptr (selector id f)
-          mapper _             = (0, Node (0, 0) [])
+stackFrames :: TypeConfig -> Program d -> Program (Int, StackRange)
+stackFrames ptr p@(Program declarations _) = Program (fmap mapper declarations) (0, (0, 0))
+    where mapper (Frame l f _) = let f' = frame ptr f in Frame l f' (getFrameElementData f')
+          mapper d             = d $> (0, (0, 0))
 
-stack :: TypeConfig -> Program d -> Tree StackRange
-stack ptr program = Node (0, 0) (fmap (Node (0, 0) . pure . snd) (stackFrames ptr program))
+stack :: TypeConfig -> Program d -> Program StackRange
+stack ptr program = snd <$> stackFrames ptr program
