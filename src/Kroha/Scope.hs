@@ -1,5 +1,7 @@
 -- Copyright (c) 2020 - 2021 Vorotynsky Maxim
 
+{-# LANGUAGE TupleSections #-}
+
 module Kroha.Scope where
 
 import Control.Monad.Zip (mzip, munzip, mzipWith)
@@ -12,37 +14,39 @@ import Kroha.Errors
 import Control.Monad (void)
 
 data ScopeEffect
-    = FluentScope
-    | VariableScope VariableName
+    = VariableScope VariableName
     | LabelScope Label
     deriving (Eq, Show)
 
-requestVars :: [RValue] -> [ScopeEffect]
+type RequestFromScope = ScopeEffect
+type PushToScope = ScopeEffect
+
+requestVars :: [RValue] -> [RequestFromScope]
 requestVars = mapMaybe (fmap VariableScope . rvalueScope)
     where rvalueScope (AsRValue (VariableLVal name)) = Just name
           rvalueScope _                              = Nothing
 
-scope :: Selector d (ScopeEffect, [ScopeEffect])
-scope (Instructions _ _)                                = (FluentScope         , [])
-scope (VariableDeclaration (StackVariable name _) _)    = (VariableScope name  , [])
-scope (VariableDeclaration (RegisterVariable name _) _) = (VariableScope name  , [])
-scope (If label (Condition (a, _, b)) _ _ _)            = (LabelScope    label , requestVars [a, b])
-scope (Loop label _ _)                                  = (LabelScope    label , [])
-scope (Break label _)                                   = (FluentScope         , LabelScope label:[])
-scope (Call label args _)                               = (FluentScope         , LabelScope label : requestVars args)
-scope (Assignment lval rval _)                          = (FluentScope         , requestVars [AsRValue lval, rval])
-scope (Inline _ _)                                      = (FluentScope         , [])
+scope :: Selector d ([PushToScope], [RequestFromScope])
+scope (Instructions _ _)                                = ([]                    , [])
+scope (VariableDeclaration (StackVariable name _) _)    = ([VariableScope name ] , [])
+scope (VariableDeclaration (RegisterVariable name _) _) = ([VariableScope name ] , [])
+scope (If label (Condition (a, _, b)) _ _ _)            = ([LabelScope    label] , requestVars [a, b])
+scope (Loop label _ _)                                  = ([LabelScope    label] , [])
+scope (Break label _)                                   = ([]                    , LabelScope label:[])
+scope (Call label args _)                               = ([]                    , LabelScope label : requestVars args)
+scope (Assignment lval rval _)                          = ([]                    , requestVars [AsRValue lval, rval])
+scope (Inline _ _)                                      = ([]                    , [])
 
-dscope :: Declaration d -> ScopeEffect
+dscope :: Declaration d -> PushToScope
 dscope (Frame label _ _)             = LabelScope    label
 dscope (GlobalVariable name _ _ _)   = VariableScope name
 dscope (ConstantVariable name _ _ _) = VariableScope name
 dscope (ManualFrame label _ _)       = LabelScope    label
 dscope (ManualVariable name _ _ _)   = VariableScope name
 
-dscope' d = (dscope d, [] :: [ScopeEffect])
+dscope' d = ([dscope d], [] :: [RequestFromScope])
 
-type Scope = [(ScopeEffect, ScopeLink)]
+type Scope = [(PushToScope, ScopeLink)]
 
 toRight _ (Just x) = Right x
 toRight x (Nothing) = Left x
@@ -55,16 +59,17 @@ data ScopeLink
     | RootProgramLink NodeId
     deriving (Show)
 
-localScope :: Program d -> Tree (ScopeEffect, [ScopeEffect])
-localScope program = Node (FluentScope, []) (selectorProg dscope' scope program)
+localScope :: Program d -> Tree ([PushToScope], [RequestFromScope])
+localScope program = Node ([], []) (selectorProg dscope' scope program)
 
 linksTree :: Program d -> Tree ScopeLink
 linksTree program = mzipWith id (Node RootProgramLink (selectorProg DeclarationLink ElementLink (void program))) (progId program)
 
-scopeTree :: Scope -> Tree (ScopeEffect, ScopeLink) -> Tree Scope
-scopeTree parent (Node effect childs) = Node (effect:parent) childScope
-    where folder acc child = (rootLabel child : fst acc, snd acc ++ [scopeTree (fst acc) child])
-          childScope = snd $ foldl folder (effect:parent, []) childs
+scopeTree :: Scope -> Tree ([PushToScope], ScopeLink) -> Tree Scope
+scopeTree parent (Node effect childs) = Node (eZip effect ++ parent) childScope
+    where folder acc child = ((eZip . rootLabel) child ++ fst acc, snd acc ++ [scopeTree (fst acc) child])
+          childScope = snd $ foldl folder (eZip effect ++ parent, []) childs
+          eZip (p, l) = fmap (, l) p
 
 linkScope :: Tree ([ScopeEffect], Scope) -> Result (Tree Scope)
 linkScope = sequenceErrors JoinedError . fmap (first scopeError . result)
