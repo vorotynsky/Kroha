@@ -33,8 +33,8 @@ declType (ManualVariable   _ t _ _) = t
 
 
 getType :: (?tc :: TypeConfig) => ScopeLink -> Result TypeId
-getType (ElementLink (VariableDeclaration (RegisterVariable _ r)) _) = firstE UnknownRegister $ findEither r (registers ?tc)
-getType (ElementLink (VariableDeclaration (StackVariable    _ t)) _) = types' ?tc t
+getType (ElementLink (VariableDeclaration (RegisterVariable _ r) _) _) = firstE UnknownRegister $ findEither r (registers ?tc)
+getType (ElementLink (VariableDeclaration (StackVariable    _ t) _) _) = types' ?tc t
 getType (DeclarationLink declaration _)                              = types' ?tc (declType declaration)
 getType _                                                            = Left (error "unexpected type error")
 
@@ -54,15 +54,15 @@ makeTypeCast :: (?tc :: TypeConfig) => Scope -> (RValue, RValue) -> Result TypeC
 makeTypeCast scope values = extractM $ bimap find find values
     where find x = rvalType scope $ x
 
-casts :: (?tc :: TypeConfig) => FrameElement -> Scope -> [Result TypeCast]
-casts (Instructions _)                  _ = []
-casts (VariableDeclaration _)           _ = []
-casts (If _ (Condition (a, _, b)) _ _)  s = fmap (makeTypeCast s) [(a, b)]
-casts (Loop _ _)                        _ = []
-casts (Break _)                         _ = []
-casts (Call _ _)                        _ = [] -- todo: types for call
-casts (Assignment lval rval)            s = fmap (makeTypeCast s) [(AsRValue lval, rval)]
-casts (Inline _)                        _ = []
+casts :: (?tc :: TypeConfig) => FrameElement d -> Scope -> [Result TypeCast]
+casts (Instructions _ _)                  _ = []
+casts (VariableDeclaration _ _)           _ = []
+casts (If _ (Condition (a, _, b)) _ _ _)  s = fmap (makeTypeCast s) [(a, b)]
+casts (Loop _ _ _)                        _ = []
+casts (Break _ _)                         _ = []
+casts (Call _ _ _)                        _ = [] -- todo: types for call
+casts (Assignment lval rval _)            s = fmap (makeTypeCast s) [(AsRValue lval, rval)]
+casts (Inline _ _)                        _ = []
 
 typeCastsTree :: TypeConfig -> Tree (ScopeLink, Scope) -> Either Error (Tree ([TypeCast]))
 typeCastsTree tc = let f ((RootProgramLink _  ), _)     = []

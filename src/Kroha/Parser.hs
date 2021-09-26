@@ -43,33 +43,33 @@ lvalue = aparse lvalue'
 rvalue' = (RLiteral<$> literal) <|> (AsRValue <$> lvalue')
 rvalue = aparse rvalue'
 
-break  = Break  <$> (keyword "break" *> parens name)
-inline = Inline <$> aparse (char '!' *> many (noneOf "\n"))
-call   = Call   <$> (keyword "call" *> angles name) <*> parens (rvalue `sepBy` achar ',')
+break  = krP $ Break  <$> (keyword "break" *> parens name)
+inline = krP $ Inline <$> aparse (char '!' *> many (noneOf "\n"))
+call   = krP $ Call   <$> (keyword "call" *> angles name) <*> parens (rvalue `sepBy` achar ',')
 
 vtype = PointerType <$> (achar '&' *> vtype)
     <|> TypeName <$> name
 
-register = aparse $ VariableDeclaration <$> (RegisterVariable <$> (keyword "reg" *> name) <*> (achar ':' *> name ))
-variable = aparse $ VariableDeclaration <$> (StackVariable    <$> (keyword "var" *> name) <*> (achar ':' *> vtype))
+register = krP . aparse $ VariableDeclaration <$> (RegisterVariable <$> (keyword "reg" *> name) <*> (achar ':' *> name ))
+variable = krP . aparse $ VariableDeclaration <$> (StackVariable    <$> (keyword "var" *> name) <*> (achar ':' *> vtype))
 
-assignment = Assignment <$> lvalue <*> (achar '=' *> rvalue)
+assignment = krP $ Assignment <$> lvalue <*> (achar '=' *> rvalue)
 
 condition = curry3 Condition <$> rvalue <*> cond <*> rvalue
     where p x s = const x <$> string s
           cond = p Equals "=="  <|> p NotEquals "!=" <|> p Greater ">" <|> p Less "<"
 
 instrSet p = Instructions <$> (aparse . many $ aparse p)
-block = braces . instrSet
+block = krP . braces . instrSet
 
-loop p = Loop <$> (keyword "loop" *> parens name) <*> (block p)
+loop p = krP $ Loop <$> (keyword "loop" *> parens name) <*> block p
 
-ifstatment p =
+ifstatment p = krP $
     do keyword "if"
        (cond, label) <- parens $ (,) <$> (condition <* achar ',') <*> name
        body <- block p
-       elseb <- (keyword "else" *> block p) <|> (pure $ Instructions [])
-       return $ If label cond body (elseb)
+       elseb <- (keyword "else" *> block p) <|> pure (Instructions [] ())
+       return $ If label cond body elseb
 
 hlasm = reduce [ inline,              call,           Kroha.Parser.break,
                  register,            variable,

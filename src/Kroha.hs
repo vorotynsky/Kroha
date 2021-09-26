@@ -12,6 +12,7 @@ import           Kroha.Stack           (stack)
 import           Kroha.Instructions    (instructions)
 import           Kroha.Backends.Common (runBackend, Backend(typeConfig))
 import           Kroha.Backends.Nasm   (nasm)
+import           Data.Functor          (($>))
 
 
 kroha :: String -> Either String String
@@ -19,7 +20,7 @@ kroha src = first show compile
     where compile = do
                     program <- parse src
                     scopes  <- linkProgram program
-                    let programTree = Node (Instructions []) (selectorProg (const $ Instructions []) id program)
+                    let programTree = Node (Instructions []) (selectorProg (const $ Instructions []) ($>) program)
                     let tc = (typeConfig nasm)
                     casts   <- (typeCastsTree tc $ mzip (linksTree program) scopes)
                     types   <- resolve tc casts

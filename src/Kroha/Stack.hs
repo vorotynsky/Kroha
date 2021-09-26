@@ -9,13 +9,13 @@ import Kroha.Types
 
 type StackRange = (Int, Int) {-offset, size-}
 
-stackVar :: TypeConfig -> FrameElement -> Int
-stackVar tc (VariableDeclaration (StackVariable _ (PointerType _))) = snd $ types tc !! pointerType tc
-stackVar tc (VariableDeclaration (StackVariable _ t@(TypeName _)))  = fromJust $ lookup t (types tc) 
-stackVar _   _                                                      = 0
+stackVar :: TypeConfig -> FrameElement d -> Int
+stackVar tc (VariableDeclaration (StackVariable _ (PointerType _)) _) = snd $ types tc !! pointerType tc
+stackVar tc (VariableDeclaration (StackVariable _ t@(TypeName _))  _) = fromJust $ lookup t (types tc)
+stackVar _   _                                                        = 0
 
-frame :: TypeConfig -> Tree FrameElement -> (Int, Tree StackRange)
-frame ptr tree = mapAccumL f 0 tree
+frame :: TypeConfig -> Tree (FrameElement d) -> (Int, Tree StackRange)
+frame ptr = mapAccumL f 0
     where f acc el = let size = stackVar ptr el in (acc + size, (if size > 0 then acc + size else 0, size))
 
 stackFrames :: TypeConfig -> Program d -> [(Int, Tree StackRange)]

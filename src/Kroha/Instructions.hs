@@ -11,6 +11,7 @@ import Kroha.Ast
 import Kroha.Scope
 import Kroha.Stack
 import Kroha.Types
+import Control.Monad
 
 
 type Section = String
@@ -29,7 +30,7 @@ data LabelTarget
     deriving (Show)
 
 data Instruction
-    = Body FrameElement Int
+    = Body (FrameElement ()) Int
     | Assembly String
     | Variable VariableName Int
     | Label LabelTarget
@@ -41,8 +42,8 @@ data Instruction
 type StackOffsetTree = Tree (NodeId, StackRange)
 
 link2target ::  StackOffsetTree -> ScopeLink -> Target
-link2target s (ElementLink (VariableDeclaration (StackVariable _ _)) nid) = StackTarget . fromJust . lookup nid $ toList s
-link2target _ (ElementLink (VariableDeclaration (RegisterVariable _ reg)) _) = RegisterTarget reg
+link2target s (ElementLink (VariableDeclaration (StackVariable _ _) _) nid) = StackTarget . fromJust . lookup nid $ toList s
+link2target _ (ElementLink (VariableDeclaration (RegisterVariable _ reg) _) _) = RegisterTarget reg
 link2target _ (DeclarationLink declaration _) = let (VariableScope name) = dscope declaration in VariableTarget name (declType declaration)
 
 target :: StackOffsetTree -> Scope -> RValue -> Target
@@ -52,26 +53,26 @@ target _  _ (RLiteral literal)            = LiteralTarget literal
 
 transformCond sot s (Condition (left, cmp, right)) = (target sot s left, cmp, target sot s right)
 
-instruction :: StackOffsetTree -> Scope -> FrameElement -> [Instruction]
-instruction _   _ (Kroha.Ast.Instructions f)        = mzipWith Body f [0..]
-instruction _   _ (Kroha.Ast.VariableDeclaration _) = [  ]
+instruction :: StackOffsetTree -> Scope -> FrameElement () -> [Instruction]
+instruction _   _ (Kroha.Ast.Instructions f _)        = mzipWith Body f [0..]
+instruction _   _ (Kroha.Ast.VariableDeclaration _ _) = [  ]
 
-instruction sot s (Kroha.Ast.If name cond t f)      = [ Jump (BeginLabel name) (Just $ transformCond sot s cond),
+instruction sot s (Kroha.Ast.If name cond t f _)      = [ Jump (BeginLabel name) (Just $ transformCond sot s cond),
                                                           Body f 1,
                                                           Jump (EndLabel name) Nothing,
                                                         Label (BeginLabel name),
                                                           Body t 0,
                                                         Label (EndLabel name) ]
 
-instruction _   _ (Kroha.Ast.Loop name body)        = [ Label (BeginLabel name),
+instruction _   _ (Kroha.Ast.Loop name body _)        = [ Label (BeginLabel name),
                                                           Body body 0,
                                                           Jump (BeginLabel name) Nothing,
                                                         Label (EndLabel name) ]
 
-instruction _   _ (Kroha.Ast.Break loop)            = [ Jump (EndLabel loop) Nothing ]
-instruction sot s (Kroha.Ast.Call name args)        = [ CallI (CommonLabel name) (fmap (target sot s) args) ]
-instruction sot s (Kroha.Ast.Assignment l r)        = [ Move (target sot s (AsRValue l)) (target sot s r) ]
-instruction _   _ (Kroha.Ast.Inline asm)            = [ Assembly asm ]
+instruction _   _ (Kroha.Ast.Break loop _)            = [ Jump (EndLabel loop) Nothing ]
+instruction sot s (Kroha.Ast.Call name args _)        = [ CallI (CommonLabel name) (fmap (target sot s) args) ]
+instruction sot s (Kroha.Ast.Assignment l r _)        = [ Move (target sot s (AsRValue l)) (target sot s r) ]
+instruction _   _ (Kroha.Ast.Inline asm _)            = [ Assembly asm ]
 
 
 declSection :: Declaration d -> Section
@@ -84,7 +85,7 @@ declSection ManualVariable { }   = "data"
 
 buildDeclaration :: StackOffsetTree -> Tree Scope -> Declaration d -> (Section, Declaration d, Tree [Instruction])
 buildDeclaration sot (Node _ [scope]) d@(Frame _ frame _) = (declSection d, d, instructions)
-    where instructions = mzipWith (instruction sot) scope (selector id frame)
+    where instructions = mzipWith (instruction sot) scope (selector id $ void frame)
 buildDeclaration _ _ d = (declSection d, d, Node [] [])
 
 instructions :: Tree StackRange -> Tree Scope -> Program d -> [(Section, Declaration d, Tree [Instruction])]

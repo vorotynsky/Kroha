@@ -22,16 +22,16 @@ requestVars = mapMaybe (fmap VariableScope . rvalueScope)
     where rvalueScope (AsRValue (VariableLVal name)) = Just name
           rvalueScope _                              = Nothing
 
-scope :: Selector (ScopeEffect, [ScopeEffect])
-scope (Instructions _)                                = (FluentScope         , [])
-scope (VariableDeclaration (StackVariable name _))    = (VariableScope name  , [])
-scope (VariableDeclaration (RegisterVariable name _)) = (VariableScope name  , [])
-scope (If label (Condition (a, _, b)) _ _)            = (LabelScope    label , requestVars [a, b])
-scope (Loop label _)                                  = (LabelScope    label , [])
-scope (Break label)                                   = (FluentScope         , LabelScope label:[])
-scope (Call label args)                               = (FluentScope         , LabelScope label : requestVars args)
-scope (Assignment lval rval)                          = (FluentScope         , requestVars [AsRValue lval, rval])
-scope (Inline _)                                      = (FluentScope         , [])
+scope :: Selector d (ScopeEffect, [ScopeEffect])
+scope (Instructions _ _)                                = (FluentScope         , [])
+scope (VariableDeclaration (StackVariable name _) _)    = (VariableScope name  , [])
+scope (VariableDeclaration (RegisterVariable name _) _) = (VariableScope name  , [])
+scope (If label (Condition (a, _, b)) _ _ _)            = (LabelScope    label , requestVars [a, b])
+scope (Loop label _ _)                                  = (LabelScope    label , [])
+scope (Break label _)                                   = (FluentScope         , LabelScope label:[])
+scope (Call label args _)                               = (FluentScope         , LabelScope label : requestVars args)
+scope (Assignment lval rval _)                          = (FluentScope         , requestVars [AsRValue lval, rval])
+scope (Inline _ _)                                      = (FluentScope         , [])
 
 dscope :: Declaration d -> ScopeEffect
 dscope (Frame label _ _)             = LabelScope    label
@@ -50,7 +50,7 @@ toRight x (Nothing) = Left x
 findEither k = toRight k . lookup k
 
 data ScopeLink
-    = ElementLink FrameElement NodeId
+    = ElementLink (FrameElement ()) NodeId
     | DeclarationLink (Declaration ()) NodeId
     | RootProgramLink NodeId
     deriving (Show)
