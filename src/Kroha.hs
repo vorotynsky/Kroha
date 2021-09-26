@@ -5,7 +5,7 @@ import           Data.Bifunctor        (first)
 import           Data.Tree             (Tree (..))
 
 import           Kroha.Parser          (parse)
-import           Kroha.Ast             (FrameElement (Instructions), selectorProg)
+import           Kroha.Ast             (FrameElement (Instructions), selectorProg, genId)
 import           Kroha.Scope           (linkProgram, linksTree)
 import           Kroha.Types           (resolve, typeCastsTree, TypeConfig(..))
 import           Kroha.Stack           (stack)
@@ -18,7 +18,8 @@ import           Data.Functor          (($>))
 kroha :: String -> Either String String
 kroha src = first show compile
     where compile = do
-                    program <- parse src
+                    parsed  <- parse src
+                    let program = genId parsed
                     scopes  <- linkProgram program
                     let programTree = Node (Instructions []) (selectorProg (const $ Instructions []) ($>) program)
                     let tc = (typeConfig nasm)

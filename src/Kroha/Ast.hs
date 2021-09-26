@@ -1,11 +1,12 @@
 -- Copyright (c) 2020 - 2021 Vorotynsky Maxim
 
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveTraversable #-}
 
 module Kroha.Ast where
 
 import Data.Tree
 import Data.List (mapAccumR)
+import Data.Functor (($>))
 
 type VariableName = String
 type RegisterName = String
@@ -37,8 +38,8 @@ data LocalVariable
     deriving (Show, Eq)
 
 data Comparator
-    = Equals    | NotEquals 
-    | Greater   | Less 
+    = Equals    | NotEquals
+    | Greater   | Less
     deriving (Show, Eq)
 
 newtype Condition = Condition (RValue, Comparator, RValue)
@@ -53,7 +54,7 @@ data FrameElement d
     | Call Label [RValue] d
     | Assignment LValue RValue d
     | Inline InlinedCode d
-    deriving (Show, Eq, Functor)
+    deriving (Show, Eq, Functor, Foldable, Traversable)
 
 
 data Declaration d
@@ -70,7 +71,7 @@ data Program d = Program [Declaration d] d
 type Selector d a = FrameElement d -> a
 
 childs :: FrameElement d -> [FrameElement d]
-childs (Instructions xs _)       = xs 
+childs (Instructions xs _)       = xs
 childs (VariableDeclaration x _) = []
 childs (If _ _ b e _)            = [b, e]
 childs (Loop _ b _)              = [b]
@@ -78,6 +79,24 @@ childs (Break _ _)               = []
 childs (Call _ _ _)              = []
 childs (Assignment _ _ _)        = []
 childs (Inline _ _)              = []
+
+getDeclData :: Declaration d -> d
+getDeclData (Frame _ _ d)              = d
+getDeclData (GlobalVariable _ _ _ d)   = d
+getDeclData (ConstantVariable _ _ _ d) = d
+getDeclData (ManualFrame _ _ d)        = d
+getDeclData (ManualVariable _ _ _ d)   = d
+
+getFrameElementData :: FrameElement d -> d
+getFrameElementData (Instructions _ d)        = d
+getFrameElementData (VariableDeclaration _ d) = d
+getFrameElementData (If _ _ _ _ d)            = d
+getFrameElementData (Loop _ _ d)              = d
+getFrameElementData (Break _ d)               = d
+getFrameElementData (Call _ _ d)              = d
+getFrameElementData (Assignment _ _ d)        = d
+getFrameElementData (Inline _ d)              = d
+
 
 selector :: Selector d a -> FrameElement d -> Tree a
 selector s = unfoldTree (\e -> (s e, childs e))
@@ -90,8 +109,11 @@ selectorProg df sf (Program declarations _) = fmap mapper declarations
 
 type NodeId = Int
 
-genId :: Tree a -> Tree NodeId
-genId = snd . mapAccumR (\ac b -> (ac + 1, ac)) 0
+genId :: Program d -> Program NodeId
+genId (Program decls _) = Program (snd $ mapAccumR declId 1 decls) 0
+    where genId'' = mapAccumR (\ac b -> (ac + 1, ac))
+          declId begin (Frame l fe _) = let (acc, fe') = genId'' (begin + 1) fe in (acc, Frame l fe' begin)
+          declId begin d  = (begin + 1, d $> begin)
 
 progId :: Program d -> Tree NodeId
-progId program = genId $ Node () (selectorProg (const ()) (const ()) program)
+progId program = Node 0 $ selectorProg getDeclData getFrameElementData (genId program)
