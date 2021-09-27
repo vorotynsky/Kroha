@@ -5,9 +5,9 @@
 
 module Kroha.Ast where
 
+import Control.Comonad
 import Data.Tree
 import Data.List (mapAccumR)
-import Data.Functor (($>))
 
 type VariableName = String
 type RegisterName = String
@@ -88,15 +88,6 @@ getDeclData (ConstantVariable _ _ _ d) = d
 getDeclData (ManualFrame _ _ d)        = d
 getDeclData (ManualVariable _ _ _ d)   = d
 
-getFrameElementData :: FrameElement d -> d
-getFrameElementData (Instructions _ d)        = d
-getFrameElementData (VariableDeclaration _ d) = d
-getFrameElementData (If _ _ _ _ d)            = d
-getFrameElementData (Loop _ _ d)              = d
-getFrameElementData (Break _ d)               = d
-getFrameElementData (Call _ _ d)              = d
-getFrameElementData (Assignment _ _ d)        = d
-getFrameElementData (Inline _ d)              = d
 
 
 selector :: Selector d a -> FrameElement d -> Tree a
@@ -117,15 +108,23 @@ genId (Program decls _) = Program (snd $ mapAccumR declId 1 decls) 0
           declId begin d  = (begin + 1, d $> begin)
 
 progId :: Program d -> Tree NodeId
-progId program = Node 0 $ selectorProg getDeclData getFrameElementData (genId program)
+progId program = Node 0 $ selectorProg getDeclData extract (genId program)
 
+instance Comonad FrameElement where
+    duplicate node@(Instructions c _)        = Instructions (map duplicate c) node
+    duplicate node@(VariableDeclaration v _) = VariableDeclaration v node
+    duplicate node@(If l c i e _)            = If l c (duplicate i) (duplicate e) node
+    duplicate node@(Loop l b _)              = Loop l (duplicate b) node
+    duplicate node@(Break l _)               = Break l node
+    duplicate node@(Call l a _)              = Call l a node
+    duplicate node@(Assignment l r _)        = Assignment l r node
+    duplicate node@(Inline c _)              = Inline c node
 
-duplicate :: FrameElement a -> FrameElement (FrameElement a)
-duplicate node@(Instructions c _)        = Instructions (map duplicate c) node
-duplicate node@(VariableDeclaration v _) = VariableDeclaration v node
-duplicate node@(If l c i e _)            = If l c (duplicate i) (duplicate e) node
-duplicate node@(Loop l b _)              = Loop l (duplicate b) node
-duplicate node@(Break l _)               = Break l node
-duplicate node@(Call l a _)              = Call l a node
-duplicate node@(Assignment l r _)        = Assignment l r node
-duplicate node@(Inline c _)              = Inline c node
+    extract (Instructions _ d)        = d
+    extract (VariableDeclaration _ d) = d
+    extract (If _ _ _ _ d)            = d
+    extract (Loop _ _ d)              = d
+    extract (Break _ d)               = d
+    extract (Call _ _ d)              = d
+    extract (Assignment _ _ d)        = d
+    extract (Inline _ d)              = d

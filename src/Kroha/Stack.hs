@@ -1,8 +1,8 @@
 module Kroha.Stack where
 
+import Control.Comonad (extract, duplicate, ($>))
 import Data.List (mapAccumL)
 import Data.Maybe (fromJust)
-import Data.Functor (($>))
 
 import Kroha.Ast
 import Kroha.Types
@@ -20,7 +20,7 @@ frame ptr = snd . mapAccumL f 0 . duplicate
 
 stackFrames :: TypeConfig -> Program d -> Program (Int, StackRange)
 stackFrames ptr p@(Program declarations _) = Program (fmap mapper declarations) (0, (0, 0))
-    where mapper (Frame l f _) = let f' = frame ptr f in Frame l f' (getFrameElementData f')
+    where mapper (Frame l f _) = let f' = frame ptr f in Frame l f' (extract f')
           mapper d             = d $> (0, (0, 0))
 
 stack :: TypeConfig -> Program d -> Program StackRange
