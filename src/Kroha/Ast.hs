@@ -8,6 +8,7 @@ module Kroha.Ast where
 import Control.Comonad
 import Data.Tree
 import Data.List (mapAccumR)
+import Control.Monad.Zip (mzipWith)
 
 type VariableName = String
 type RegisterName = String
@@ -64,10 +65,10 @@ data Declaration d
     | ConstantVariable VariableName TypeName Literal d
     | ManualFrame Label InlinedCode d
     | ManualVariable VariableName TypeName InlinedCode d
-    deriving (Show, Eq, Functor)
+    deriving (Show, Eq, Functor, Foldable, Traversable)
 
 data Program d = Program [Declaration d] d
-    deriving (Show, Eq, Functor)
+    deriving (Show, Eq, Functor, Foldable, Traversable)
 
 type Selector d a = FrameElement d -> a
 
@@ -128,3 +129,28 @@ instance Comonad FrameElement where
     extract (Call _ _ d)              = d
     extract (Assignment _ _ d)        = d
     extract (Inline _ d)              = d
+
+tzip :: FrameElement a -> FrameElement b -> FrameElement (a, b)
+tzip (Instructions ca _a)           (Instructions cb _b)                               = Instructions (uncurry tzip <$> zip ca cb) (_a, _b)
+tzip (VariableDeclaration va _a)    (VariableDeclaration vb _b) |  va      ==  vb      = VariableDeclaration va                    (_a, _b)
+tzip (If la ca ia ea _a)            (If lb cb ib eb _b)         | (la, ca) == (lb, cb) = If la ca  (tzip ia ib) (tzip ea eb)       (_a, _b)
+tzip (Loop la ba _a)                (Loop lb bb _b)             |  la      ==  lb      = Loop       la (tzip ba bb)                (_a, _b)
+tzip (Break la _a)                  (Break lb _b)               |  la      ==  lb      = Break      la                             (_a, _b)
+tzip (Call la aa _a)                (Call lb ab _b)             | (la, aa) == (lb, ab) = Call       la aa                          (_a, _b)
+tzip (Assignment la ra _a)          (Assignment lb rb _b)       | (la, ra) == (lb, rb) = Assignment la ra                          (_a, _b)
+tzip (Inline ca _a)                 (Inline cb _b)              |  ca      ==  cb      = Inline     ca                             (_a, _b)
+tzip _ _ = error "can't zip different frame elements"
+
+dzip :: Declaration a -> Declaration b -> Declaration (a, b)
+dzip (Frame la fea _a)              (Frame lb feb _b)              |  la          ==  lb          = Frame la (tzip fea feb)   (_a, _b)
+dzip (GlobalVariable va ta la _a)   (GlobalVariable vb tb lb _b)   | (va, ta, la) == (vb, tb, lb) = GlobalVariable   va ta la (_a, _b)
+dzip (ConstantVariable va ta la _a) (ConstantVariable vb tb lb _b) | (va, ta, la) == (vb, tb, lb) = ConstantVariable va ta la (_a, _b)
+dzip (ManualFrame la ca _a)         (ManualFrame lb cb _b)         | (la, ca)     == (lb, cb)     = ManualFrame la ca         (_a, _b)
+dzip (ManualVariable va ta ca _a)   (ManualVariable vb tb cb _b)   | (va, ta, ca) == (vb, tb, cb) = ManualVariable   va ta ca (_a, _b)
+dzip _ _ = error "can't zip different declarations"
+
+pzip :: Program a -> Program b -> Program (a, b)
+pzip (Program da _a) (Program db _b) = Program (mzipWith dzip da db) (_a, _b)
+
+pzip3 :: Program a -> Program b -> Program c -> Program (a, b, c)
+pzip3 a b c = fmap (\((a, b), c) -> (a, b, c)) (pzip (pzip a b) c)

@@ -4,14 +4,17 @@
 
 module Kroha.Scope where
 
-import Control.Monad.Zip (mzip, munzip, mzipWith)
-import Data.Maybe (mapMaybe)
-import Data.Tree (Tree(..))
-import Data.Bifunctor (first)
+import           Control.Comonad   (extract)
+import           Control.Monad     (void)
+import           Control.Monad.Zip (munzip, mzip, mzipWith)
+import           Data.Bifunctor    (first)
+import           Data.Foldable     (find)
+import           Data.Maybe        (fromJust, mapMaybe)
+import           Data.Tree         (Tree (..))
 
-import Kroha.Ast
-import Kroha.Errors
-import Control.Monad (void)
+import           Kroha.Ast
+import           Kroha.Errors
+
 
 data ScopeEffect
     = VariableScope VariableName
@@ -81,7 +84,14 @@ declarationScope :: Program d -> Scope
 declarationScope p@(Program declarations _) = (\(el, id) -> (dscope el, DeclarationLink (void el) id)) <$> zip declarations ids
     where ids = let (Node _ forest) = progId p in fmap rootLabel forest
 
-linkProgram :: Program d -> Result (Tree Scope)
-linkProgram program = linkScope (mzip requests scope)
+linkProgram' :: Program d -> Result (Tree Scope)
+linkProgram' program = linkScope (mzip requests scope)
     where (changes, requests) = munzip (localScope program)
           scope = scopeTree (declarationScope program) (mzip changes (linksTree program))
+
+linkProgram :: Program NodeId -> Result (Program (ScopeLink, Scope))
+linkProgram p@(Program _ i) =
+    do st <- linkProgram' p
+       let idTree = Node i (selectorProg getDeclData extract p)
+       let idSt = mzip idTree (mzip (linksTree p) st)
+       return $ fmap (\i -> snd . fromJust $ find ((==) i . fst) idSt) p -- dirty hack :(

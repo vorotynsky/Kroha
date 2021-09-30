@@ -64,14 +64,13 @@ casts (Call _ _ _)                        _ = [] -- todo: types for call
 casts (Assignment lval rval _)            s = fmap (makeTypeCast s) [(AsRValue lval, rval)]
 casts (Inline _ _)                        _ = []
 
-typeCastsTree :: TypeConfig -> Tree (ScopeLink, Scope) -> Either Error (Tree ([TypeCast]))
-typeCastsTree tc = let f ((RootProgramLink _  ), _)     = []
-                       f ((DeclarationLink _ _), _)     = []
-                       f ((ElementLink el _)   , scope) = let ?tc = tc in casts el scope 
-                   in sequenceErrors (JoinedError . join) . fmap (partitionErrors . f)
+typeCastsTree :: TypeConfig -> Program (ScopeLink, Scope) -> Result (Program [TypeCast])
+typeCastsTree tc = let f (RootProgramLink _, _)    = []
+                       f (DeclarationLink _ _, _)  = []
+                       f (ElementLink el _, scope) = let ?tc = tc in casts el scope
+                    in sequenceErrors (JoinedError . join) . fmap (partitionErrors . f)
 
-
-resolve :: TypeConfig -> Tree [TypeCast] -> Result (Tree [TypeCast])
-resolve config = firstE (typeName) . sequenceA . fmap sequenceA . (fmap . fmap) (resolveCast (typeCasts config))
+resolve :: TypeConfig -> Program [TypeCast] -> Result (Program [TypeCast])
+resolve config = firstE typeName . traverse sequenceA . (fmap . fmap) (resolveCast (typeCasts config))
     where resolveCast g c@(f, t) = if path g f t then Right c else Left c
           typeName (t1, t2) = let name typeId = fst $ types config !! typeId in TypeCastError (name t2) (name t1)
