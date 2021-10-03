@@ -1,0 +1,26 @@
+program {
+  frame justFunc {
+    !nop
+  }
+
+  frame callFunction {
+    call <justFunc>()
+    !nop
+  }
+}
+
+======= nasm =======
+section .text
+justFunc:
+  nop
+leave
+ret
+
+section .text
+callFunction:
+  call justFunc
+  add sp, 0
+  nop
+leave
+ret
+

@@ -1,0 +1,29 @@
+program {
+  var a : int16 = 32
+  var b : int8 = 1
+  const c : int16 = 32
+  const d : int8 = 1
+
+  manual var arr : &int8 {
+    times 64 db 0
+  }
+}
+
+======= nasm =======
+section .data
+a: dw 32
+
+section .data
+b: db 1
+
+section .rodata
+c: dw 32
+
+section .rodata
+d: db 1
+
+section .data
+arr:
+  times 64 db 0
+  
+
