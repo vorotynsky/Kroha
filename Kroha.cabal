@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           Kroha
-version:        1.1.1.0
+version:        1.2.1.0
 description:    Please see the README on GitHub at <https://github.com/vorotynsky/HLasm#readme>
 homepage:       https://github.com/vorotynsky/HLasm#readme
 bug-reports:    https://github.com/vorotynsky/HLasm/issues
@@ -40,6 +40,7 @@ executable Kroha
       src
   build-depends:
       base >=4.7 && <5
+    , comonad >=5 && <5.1
     , containers ==0.6.*
     , extra >=1.0 && <1.8
     , parsec >=3.1.0 && <=3.1.14.0
@@ -69,6 +70,7 @@ test-suite Kroha-tests
       Diff >=0.2 && <0.5
     , HUnit ==1.6.*
     , base >=4.7 && <5
+    , comonad >=5 && <5.1
     , containers ==0.6.*
     , extra >=1.0 && <1.8
     , parsec >=3.1.0 && <=3.1.14.0

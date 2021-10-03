@@ -57,13 +57,13 @@ nasmSection :: Section -> String -> String
 nasmSection section body = header <> body <> "\n\n"
     where header = "section ." ++ section ++ "\n"
 
-nasmDeclaration :: Declaration -> [String] -> String
-nasmDeclaration (Frame l _)                               body  = l ++ ":\n" ++ intercalate "\n" body ++ "\nleave\nret"
-nasmDeclaration (ManualVariable v _ _)                   [body] = v ++ ": "  ++ body ++ "\n"
-nasmDeclaration (ManualFrame l _)                         body  = l ++ ":\n" ++ intercalate "\n" (fmap ((++) "  ") body)
-nasmDeclaration (ManualVariable v _ _)                    body  = v ++ ":\n" ++ intercalate "\n" (fmap ((++) "  ") body)
-nasmDeclaration (GlobalVariable   n t (IntegerLiteral l)) _     = n ++ ": "  ++ nasmTypeG t ++ " " ++ show l
-nasmDeclaration (ConstantVariable n t (IntegerLiteral l)) _     = n ++ ": "  ++ nasmTypeG t ++ " " ++ show l
+nasmDeclaration :: Declaration d -> [String] -> String
+nasmDeclaration (Frame l _ _)                               body  = l ++ ":\n" ++ intercalate "\n" body ++ "\nleave\nret"
+nasmDeclaration (ManualVariable v _ _ _)                   [body] = v ++ ": "  ++ body ++ "\n"
+nasmDeclaration (ManualFrame l _ _)                         body  = l ++ ":\n" ++ intercalate "\n" (fmap ((++) "  ") body)
+nasmDeclaration (ManualVariable v _ _ _)                    body  = v ++ ":\n" ++ intercalate "\n" (fmap ((++) "  ") body)
+nasmDeclaration (GlobalVariable   n t (IntegerLiteral l) _) _     = n ++ ": "  ++ nasmTypeG t ++ " " ++ show l
+nasmDeclaration (ConstantVariable n t (IntegerLiteral l) _) _     = n ++ ": "  ++ nasmTypeG t ++ " " ++ show l
 
 litType :: Literal -> Result TypeId
 litType l@(IntegerLiteral x) | x >= 0   && x < 65536 = Right 2

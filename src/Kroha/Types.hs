@@ -1,3 +1,5 @@
+-- Copyright (c) 2020 - 2021 Vorotynsky Maxim
+
 {-# LANGUAGE ImplicitParams #-}
 
 module Kroha.Types where
@@ -24,15 +26,15 @@ data TypeConfig = TypeConfig
 types' tc (PointerType _) = Right (pointerType tc)
 types' tc t               = maybeToEither (UnknownType t) (t `elemIndex` (fst . unzip . types $ tc))
     
-declType :: Declaration -> TypeName
-declType (GlobalVariable   _ t _) = t
-declType (ConstantVariable _ t _) = t
-declType (ManualVariable   _ t _) = t
+declType :: Declaration d -> TypeName
+declType (GlobalVariable   _ t _ _) = t
+declType (ConstantVariable _ t _ _) = t
+declType (ManualVariable   _ t _ _) = t
 
 
 getType :: (?tc :: TypeConfig) => ScopeLink -> Result TypeId
-getType (ElementLink (VariableDeclaration (RegisterVariable _ r)) _) = firstE UnknownRegister $ findEither r (registers ?tc)
-getType (ElementLink (VariableDeclaration (StackVariable    _ t)) _) = types' ?tc t
+getType (ElementLink (VariableDeclaration (RegisterVariable _ r) _) _) = firstE UnknownRegister $ findEither r (registers ?tc)
+getType (ElementLink (VariableDeclaration (StackVariable    _ t) _) _) = types' ?tc t
 getType (DeclarationLink declaration _)                              = types' ?tc (declType declaration)
 getType _                                                            = Left (error "unexpected type error")
 
@@ -52,24 +54,23 @@ makeTypeCast :: (?tc :: TypeConfig) => Scope -> (RValue, RValue) -> Result TypeC
 makeTypeCast scope values = extractM $ bimap find find values
     where find x = rvalType scope $ x
 
-casts :: (?tc :: TypeConfig) => FrameElement -> Scope -> [Result TypeCast]
-casts (Instructions _)                  _ = []
-casts (VariableDeclaration _)           _ = []
-casts (If _ (Condition (a, _, b)) _ _)  s = fmap (makeTypeCast s) [(a, b)]
-casts (Loop _ _)                        _ = []
-casts (Break _)                         _ = []
-casts (Call _ _)                        _ = [] -- todo: types for call
-casts (Assignment lval rval)            s = fmap (makeTypeCast s) [(AsRValue lval, rval)]
-casts (Inline _)                        _ = []
+casts :: (?tc :: TypeConfig) => FrameElement d -> Scope -> [Result TypeCast]
+casts (Instructions _ _)                  _ = []
+casts (VariableDeclaration _ _)           _ = []
+casts (If _ (Condition (a, _, b)) _ _ _)  s = fmap (makeTypeCast s) [(a, b)]
+casts (Loop _ _ _)                        _ = []
+casts (Break _ _)                         _ = []
+casts (Call _ _ _)                        _ = [] -- todo: types for call
+casts (Assignment lval rval _)            s = fmap (makeTypeCast s) [(AsRValue lval, rval)]
+casts (Inline _ _)                        _ = []
 
-typeCastsTree :: TypeConfig -> Tree (ScopeLink, Scope) -> Either Error (Tree ([TypeCast]))
-typeCastsTree tc = let f ((RootProgramLink _  ), _)     = []
-                       f ((DeclarationLink _ _), _)     = []
-                       f ((ElementLink el _)   , scope) = let ?tc = tc in casts el scope 
-                   in sequenceErrors (JoinedError . join) . fmap (partitionErrors . f)
+typeCastsTree :: TypeConfig -> Program (ScopeLink, Scope) -> Result (Program [TypeCast])
+typeCastsTree tc = let f (RootProgramLink _, _)    = []
+                       f (DeclarationLink _ _, _)  = []
+                       f (ElementLink el _, scope) = let ?tc = tc in casts el scope
+                    in sequenceErrors (JoinedError . join) . fmap (partitionErrors . f)
 
-
-resolve :: TypeConfig -> Tree [TypeCast] -> Result (Tree [TypeCast])
-resolve config = firstE (typeName) . sequenceA . fmap sequenceA . (fmap . fmap) (resolveCast (typeCasts config))
+resolve :: TypeConfig -> Program [TypeCast] -> Result (Program [TypeCast])
+resolve config = firstE typeName . traverse sequenceA . (fmap . fmap) (resolveCast (typeCasts config))
     where resolveCast g c@(f, t) = if path g f t then Right c else Left c
           typeName (t1, t2) = let name typeId = fst $ types config !! typeId in TypeCastError (name t2) (name t1)
