@@ -9,25 +9,25 @@ import Data.List (intercalate)
 type Result a = Either Error a
 
 data Error 
-    = JoinedError [Error]
-    | ParserError String
-    | TypeCastError TypeName TypeName
-    | UnknownType TypeName
-    | UnknownRegister RegisterName
-    | VariableNotFound VariableName
-    | LabelNotFound Label
-    | BackendError String
+    = JoinedError [Error]             {-  -}
+    | ParserError String              {-  -}
+    | TypeCastError TypeName TypeName NodeId
+    | UnknownType TypeName            NodeId
+    | UnknownRegister RegisterName    NodeId
+    | VariableNotFound VariableName   NodeId
+    | LabelNotFound Label             NodeId
+    | BackendError String             {-  -}
 
 
 instance Show Error where
-    show (JoinedError errors)   = intercalate "\n" $ fmap show errors
-    show (ParserError message)  = "[Parser error]:\n" ++ (unlines . fmap ((++) "\t") . lines) message
-    show (TypeCastError t1 t2)  = "[Type error]: "    ++ "Can't cast from " ++ show t1 ++ " to " ++ show t2
-    show (UnknownType t)        = "[Type error]: "    ++ "Unknown type " ++ show t
-    show (UnknownRegister reg)  = "[Type error]: "    ++ "Unknown register name " ++ show reg
-    show (VariableNotFound var) = "[Scope error]: "   ++ "Variable " ++ var   ++ " not found in the scope"
-    show (LabelNotFound label)  = "[Scope error]: "   ++ "Label "    ++ label ++ " not found in the scope"
-    show (BackendError message) = "[Asm error]: \n"   ++ (unlines . fmap ((++) "\t") . lines) message
+    show (JoinedError errors)     = intercalate "\n" $ fmap show errors
+    show (ParserError message)    = "[Parser error]:\n" ++ (unlines . fmap ((++) "\t") . lines) message
+    show (TypeCastError t1 t2 _)  = "[Type error]: "    ++ "Can't cast from " ++ show t1 ++ " to " ++ show t2
+    show (UnknownType t _)        = "[Type error]: "    ++ "Unknown type " ++ show t
+    show (UnknownRegister reg _)  = "[Type error]: "    ++ "Unknown register name " ++ show reg
+    show (VariableNotFound var _) = "[Scope error]: "   ++ "Variable " ++ var   ++ " not found in the scope"
+    show (LabelNotFound label _)  = "[Scope error]: "   ++ "Label "    ++ label ++ " not found in the scope"
+    show (BackendError message)   = "[Asm error]: \n"   ++ (unlines . fmap ((++) "\t") . lines) message
 
 firstE :: (a -> Error) -> Either a b -> Either Error b
 firstE = first
