@@ -33,9 +33,9 @@ declType (ManualVariable   _ t _ _) = t
 
 
 getType :: (?tc :: TypeConfig) => ScopeLink -> Result TypeId
-getType (ElementLink (VariableDeclaration (RegisterVariable _ r) _) _) = firstE UnknownRegister $ findEither r (registers ?tc)
-getType (ElementLink (VariableDeclaration (StackVariable    _ t) _) _) = types' ?tc t
-getType (DeclarationLink declaration _)                              = types' ?tc (declType declaration)
+getType (ElementLink (VariableDeclaration (RegisterVariable _ r) _)) = firstE UnknownRegister $ findEither r (registers ?tc)
+getType (ElementLink (VariableDeclaration (StackVariable    _ t) _)) = types' ?tc t
+getType (DeclarationLink declaration)                                = types' ?tc (declType declaration)
 getType _                                                            = Left (error "unexpected type error")
 
 
@@ -66,8 +66,8 @@ casts (Inline _ _)                        _ = []
 
 typeCastsTree :: TypeConfig -> Program (ScopeLink, Scope) -> Result (Program [TypeCast])
 typeCastsTree tc = let f (RootProgramLink _, _)    = []
-                       f (DeclarationLink _ _, _)  = []
-                       f (ElementLink el _, scope) = let ?tc = tc in casts el scope
+                       f (DeclarationLink _, _)  = []
+                       f (ElementLink el, scope) = let ?tc = tc in casts el scope
                     in sequenceErrors (JoinedError . join) . fmap (partitionErrors . f)
 
 resolve :: TypeConfig -> Program [TypeCast] -> Result (Program [TypeCast])

@@ -57,16 +57,16 @@ toRight x (Nothing) = Left x
 findEither k = toRight k . lookup k
 
 data ScopeLink
-    = ElementLink (FrameElement ()) NodeId
-    | DeclarationLink (Declaration ()) NodeId
-    | RootProgramLink NodeId
+    = ElementLink (FrameElement NodeId)
+    | DeclarationLink (Declaration NodeId)
+    | RootProgramLink (Program NodeId)
     deriving (Show)
 
 localScope :: Program d -> Tree ([PushToScope], [RequestFromScope])
 localScope program = Node ([], []) (selectorProg dscope' scope program)
 
-linksTree :: Program d -> Tree ScopeLink
-linksTree program = mzipWith id (Node RootProgramLink (selectorProg DeclarationLink ElementLink (void program))) (progId program)
+linksTree :: Program NodeId -> Tree ScopeLink
+linksTree program = Node (RootProgramLink program) $ selectorProg DeclarationLink ElementLink program
 
 scopeTree :: Scope -> Tree ([PushToScope], ScopeLink) -> Tree Scope
 scopeTree parent (Node effect childs) = Node (eZip effect ++ parent) childScope
@@ -80,13 +80,14 @@ linkScope = sequenceErrors JoinedError . fmap (first scopeError . result)
           scopeError (VariableScope var) = VariableNotFound var
           scopeError (LabelScope label)  = LabelNotFound label
 
-declarationScope :: Program d -> Scope
-declarationScope p@(Program declarations _) = (\(el, id) -> (dscope el, DeclarationLink (void el) id)) <$> zip declarations ids
-    where ids = let (Node _ forest) = progId p in fmap rootLabel forest
+declarationScope :: Program NodeId -> Scope
+declarationScope p@(Program declarations _) = fmap (\el -> (dscope el, DeclarationLink el)) declarations
 
-linkProgram' :: Program d -> Result (Tree Scope)
-linkProgram' program = linkScope (mzip requests scope)
+
+linkProgram' :: Program NodeId -> Result (Tree Scope)
+linkProgram' program@(Program _ i) = linkScope (mzip requests scope)
     where (changes, requests) = munzip (localScope program)
+          ids = Node i $ selectorProg getDeclData extract program
           scope = scopeTree (declarationScope program) (mzip changes (linksTree program))
 
 linkProgram :: Program NodeId -> Result (Program (ScopeLink, Scope))

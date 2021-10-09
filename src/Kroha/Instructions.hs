@@ -42,9 +42,9 @@ data Instruction
 type StackOffsetTree = Program (NodeId, StackRange)
 
 link2target :: StackOffsetTree -> ScopeLink -> Target
-link2target s (ElementLink (VariableDeclaration (StackVariable _ _) _) nid) = StackTarget . fromJust . lookup nid $ toList s
-link2target _ (ElementLink (VariableDeclaration (RegisterVariable _ reg) _) _) = RegisterTarget reg
-link2target _ (DeclarationLink declaration _) = let (VariableScope name) = dscope declaration in VariableTarget name (declType declaration)
+link2target s (ElementLink (VariableDeclaration (StackVariable _ _) nid)) = StackTarget . fromJust . lookup nid $ toList s
+link2target _ (ElementLink (VariableDeclaration (RegisterVariable _ reg) _)) = RegisterTarget reg
+link2target _ (DeclarationLink declaration) = let (VariableScope name) = dscope declaration in VariableTarget name (declType declaration)
 
 target :: StackOffsetTree -> Scope -> RValue -> Target
 target so s (AsRValue (VariableLVal var)) = link2target so . fromJust . lookup (VariableScope var) $ s
