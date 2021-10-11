@@ -1,10 +1,12 @@
+{-# LANGUAGE TupleSections #-}
 module Kroha.Errors where
 
 import Kroha.Ast
 import Data.Bifunctor (bimap, first)
 import Data.Either (partitionEithers)
 import Data.Foldable (toList)
-import Data.List (intercalate, sort)
+import Data.List.Extra
+-- import Data.List (intercalate, sort, groupBy, nub)
 import Data.Maybe (fromMaybe)
 import Text.Parsec (SourcePos, sourceName, sourceColumn, sourceLine)
 
@@ -44,18 +46,24 @@ sequenceErrors f e = bimap f (const g) $ partitionErrors (toList e)
 
 toErrorList :: [Error] -> [Error]
 toErrorList = concatMap mapper
-    where mapper (JoinedError errors) = errors
+    where mapper (JoinedError errors) = toErrorList errors
           mapper error                = [error]
 
 
+sNub :: Eq a => [a] -> [a]
+sNub (a:b:tail) | a == b    = sNub (b:tail)
+                | otherwise = a:sNub (b:tail)
+sNub xs                     = xs
+
 showErrors :: (NodeId -> Maybe (SourcePos, SourcePos)) -> Error -> String
-showErrors findRange = showError . JoinedError . sort . toErrorList . pure
-    where showError (JoinedError errors)     = intercalate "\n\n" $ fmap showError errors
-          showError (TypeCastError t1 t2 d)  = showRange d ++ "[Type error]: "  ++ "Can't cast from " ++ show t1 ++ " to " ++ show t2
-          showError (UnknownType t d)        = showRange d ++ "[Type error]: "  ++ "Unknown type " ++ show t
-          showError (UnknownRegister reg d)  = showRange d ++ "[Type error]: "  ++ "Unknown register name " ++ show reg
-          showError (VariableNotFound var d) = showRange d ++ "[Scope error]: " ++ "Variable " ++ var   ++ " not found in the scope"
-          showError (LabelNotFound label d)  = showRange d ++ "[Scope error]: " ++ "Label "    ++ label ++ " not found in the scope"
-          showError (BackendError message)   = "[Asm error]: \n" ++ (unlines . fmap ((++) "\t") . lines) message
-          showRange = maybe "" showRange' . findRange
-          showRange' (begin, end) = sourceName begin ++ ":" ++ show (sourceLine begin) ++ ":" ++ show (sourceColumn begin) ++ ": "
+showErrors findRange = intercalate "\n" . fmap (uncurry showError) . process . toErrorList . pure
+    where showError r (JoinedError _)          = undefined
+          showError r (TypeCastError t1 t2 d)  = r ++ "[Type error]:\t"  ++ "Can't cast from " ++ show t1 ++ " to " ++ show t2
+          showError r (UnknownType t d)        = r ++ "[Type error]:\t"  ++ "Unknown type " ++ show t
+          showError r (UnknownRegister reg d)  = r ++ "[Type error]:\t"  ++ "Unknown register name " ++ show reg
+          showError r (VariableNotFound var d) = r ++ "[Scope error]:\t" ++ "Variable " ++ var   ++ " not found in the scope"
+          showError r (LabelNotFound label d)  = r ++ "[Scope error]:\t" ++ "Label "    ++ label ++ " not found in the scope"
+          showError r (BackendError message)   = "[Asm error]: \n" ++ (unlines . fmap ((++) "\t") . lines) message
+          showRange' (begin, end) = sourceName begin ++ ":" ++ show (sourceLine begin) ++ ":" ++ show (sourceColumn begin) ++ ":\t"
+          zipFrom (a, b) = fmap (a, ) b
+          process = concatMap (zipFrom . bimap (maybe "" showRange') nub) . groupSort . map (\x -> (findRange $ getErrorId x, x))
