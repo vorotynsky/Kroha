@@ -43,6 +43,7 @@ executable Kroha
     , comonad >=5 && <5.1
     , containers ==0.6.*
     , extra >=1.0 && <1.8
+    , hashmap >=1.0.0 && <1.4
     , parsec >=3.1.0 && <=3.1.14.0
   default-language: Haskell2010
 
@@ -73,5 +74,6 @@ test-suite Kroha-tests
     , comonad >=5 && <5.1
     , containers ==0.6.*
     , extra >=1.0 && <1.8
+    , hashmap >=1.0.0 && <1.4
     , parsec >=3.1.0 && <=3.1.14.0
   default-language: Haskell2010

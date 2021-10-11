@@ -51,7 +51,7 @@ testCase :: TestName -> Test
 testCase name = TestCase $ do
     text <- readFile $ toFile ".test.kr" name
     let (program, expected) = extract text
-    let actual = fromEither $ kroha program
+    let actual = fromEither $ kroha "TestCase" program
     assertProgram name expected actual
     where extract text = fromJust . join . find isJust . fmap (`splitBy` text) $ ["nasm"]
 

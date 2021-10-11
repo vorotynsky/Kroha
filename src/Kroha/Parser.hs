@@ -7,7 +7,7 @@ module Kroha.Parser (Kroha.Parser.parse) where
 import           Kroha.Ast
 import           Kroha.Errors
 
-import           Data.Bifunctor     (bimap)
+import           Data.Bifunctor     (first)
 import           Data.Maybe         (maybeToList)
 import           Data.Tree          (Tree (..), unfoldTreeM)
 import           Data.Tuple.Extra   (curry3)
@@ -21,7 +21,11 @@ nat = fmap read (many1 digit)
 aparse :: Parser a -> Parser a
 aparse  = let spaces = many space in between spaces spaces
 
-krP p = p <*> pure ()
+krP p = do
+    begin <- getPosition
+    value <- p
+    end <- getPosition
+    return $ value (begin, end)
 
 achar   = aparse . char
 keyword word = aparse $ try (string word <* space)
@@ -68,7 +72,7 @@ ifstatment p = krP $
     do keyword "if"
        (cond, label) <- parens $ (,) <$> (condition <* achar ',') <*> name
        body <- block p
-       elseb <- (keyword "else" *> block p) <|> pure (Instructions [] ())
+       elseb <- (keyword "else" *> block p) <|> krP (pure (Instructions []))
        return $ If label cond body elseb
 
 hlasm = reduce [ inline,              call,           Kroha.Parser.break,
@@ -93,7 +97,9 @@ frame p = Frame <$> fname <*> block p
     where fname = (keyword "frame" *> name)
 
 globals = krP $ frame hlasm <|> constant <|> globvar <|> manualFrame <|> manualVar
-program = keyword "program" *> braces (many globals)
+program = krP $ fmap Program parser
+    where parser = keyword "program" *> braces (many globals)
 
-parse :: String -> Result (Program ())
-parse = bimap (ParserError . show) (`Program` ()) . Text.Parsec.parse program ""
+
+parse :: String -> String -> Either String (Program (SourcePos, SourcePos))
+parse name = first show . Text.Parsec.parse program name

@@ -1,11 +1,13 @@
 module Kroha (kroha) where
 
 import           Data.Bifunctor        (first)
+import           Data.Foldable         (toList)
+import           Data.HashMap          (fromList, lookup)
 
 import           Kroha.Ast             (NodeId, Program, genId, pzip, pzip3)
 import           Kroha.Backends.Common (runBackend, typeConfig)
 import           Kroha.Backends.Nasm   (nasm)
-import           Kroha.Errors          (Error (ParserError), Result)
+import           Kroha.Errors          (Result, showErrors)
 import           Kroha.Instructions    (instructions)
 import           Kroha.Parser          (parse)
 import           Kroha.Scope           (linkProgram)
@@ -23,8 +25,12 @@ compile program = do
                   let prepared = instructions (pzip3 stackRanges (fmap snd scopes) program)
                   return (runBackend nasm prepared)
 
-kroha :: String -> Either String String
-kroha src = case fmap genId (parse src) of
-                         Left (ParserError err) -> Left err
-                         Left _                 -> error "Unexpected parser error type"
-                         Right prog             -> first show $ compile prog
+kroha :: String -> String -> Either String String
+kroha name src =
+      case parse name src of
+           Left err   -> Left err
+           Right parsed -> first (showErrors (`Data.HashMap.lookup` rangeTable)) $ compile prog
+              where prog = genId parsed
+                    rangeTable = fromList $ toList $ pzip prog parsed
+
+
