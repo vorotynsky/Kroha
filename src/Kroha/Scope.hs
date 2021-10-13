@@ -75,8 +75,9 @@ scopeTree parent (Node effect childs) = Node (eZip effect ++ parent) childScope
           eZip (p, l) = fmap (, l) p
 
 linkScope :: Tree (NodeId, ([ScopeEffect], Scope)) -> Result (Tree Scope)
-linkScope = sequenceErrors JoinedError . fmap ((\(i, d) -> first (scopeError i) . result $ d))
-    where result (request, scope) = traverse (\r -> findEither r scope >>= return . (,) r) request
+linkScope = sequenceE id . fmap (\(i, d) -> sequenceE (fmap (scopeError i)) $ result d)
+    where result (request, scope) = fmap (\r -> (,) r <$> findEither r scope) request
+          sequenceE f = sequenceErrors (JoinedError . f)
           scopeError i (VariableScope var) = VariableNotFound var i
           scopeError i (LabelScope label)  = LabelNotFound label  i
 

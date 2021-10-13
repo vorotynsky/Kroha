@@ -46,11 +46,10 @@ rvalType _ (AsRValue (RegisterLVal reg )) nid = maybeToEither (UnknownRegister r
 
 type TypeCast = (TypeId, TypeId)
 
-extractM :: Monad m => (m a, m b) -> m (a, b)
-extractM (a, b) = do x <- a; y <- b; return (x, y)
+extractE (a, b) = (\[a, b] -> (a, b)) <$> sequenceErrors JoinedError [a, b]
 
 makeTypeCast :: (?tc :: TypeConfig) => Scope -> NodeId -> (RValue, RValue) -> Result TypeCast
-makeTypeCast scope nid values = extractM $ bimap find find values
+makeTypeCast scope nid values = extractE $ bimap find find values
     where find x = rvalType scope x nid
 
 casts :: (?tc :: TypeConfig) => FrameElement NodeId -> Scope -> [Result TypeCast]
@@ -70,7 +69,8 @@ typeCastsTree tc = let f (RootProgramLink _, _)  = []
                     in sequenceErrors (JoinedError . join) . fmap (partitionErrors . f)
 
 resolve :: TypeConfig -> Program (NodeId, [TypeCast]) -> Result (Program [TypeCast])
-resolve config = firstE typeName . traverse sequenceA . fmap (fmap (resolveCast (typeCasts config)) . append)
+resolve config = processError (map (resolveCast (typeCasts config)) . append)
     where resolveCast g (nid, c@(f, t)) = if path g f t then Right c else Left (nid, c)
           typeName (nid, (t1, t2)) = let name typeId = fst $ types config !! typeId in TypeCastError (name t2) (name t1) nid
           append (a, l) = fmap ((,) a) l
+          processError f = sequenceErrors JoinedError . fmap (sequenceErrors (JoinedError . map typeName) . f)
