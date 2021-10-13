@@ -8,11 +8,13 @@ import Data.List (dropWhileEnd, find)
 import Data.Char (isSpace)
 import Data.Maybe (isJust, fromJust)
 import Control.Monad (join)
+import Data.List.Extra (trim)
+import Data.Tuple.Extra (both)
 
 type TestName = String
 
 toFile :: String -> TestName -> String
-toFile sufix name = "test/examples/" ++ name ++ sufix
+toFile sufix name = "test/" ++ name ++ sufix
 
 printDiff :: [Diff [String]] -> String
 printDiff = concatMap show1
@@ -50,10 +52,10 @@ splitBy label test = case splitLines ("======= " ++ label ++ " =======") test of
 testCase :: TestName -> Test
 testCase name = TestCase $ do
     text <- readFile $ toFile ".test.kr" name
-    let (program, expected) = extract text
-    let actual = fromEither $ kroha "TestCase" program
+    let (program, expected) = both trim $ extract text
+    let actual = trim . fromEither $ kroha name program
     assertProgram name expected actual
-    where extract text = fromJust . join . find isJust . fmap (`splitBy` text) $ ["nasm"]
+    where extract text = fromJust . join . find isJust . fmap (`splitBy` text) $ ["nasm", "errors"]
 
 tests :: [TestName] -> Test
 tests names = TestList $ fmap (\name -> TestLabel name (testCase name)) names
