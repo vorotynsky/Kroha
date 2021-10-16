@@ -74,18 +74,19 @@ scopeTree parent (Node effect childs) = Node (eZip effect ++ parent) childScope
           childScope = snd $ foldl folder (eZip effect ++ parent, []) childs
           eZip (p, l) = fmap (, l) p
 
-linkScope :: Tree ([ScopeEffect], Scope) -> Result (Tree Scope)
-linkScope = sequenceErrors JoinedError . fmap (first scopeError . result)
-    where result (request, scope) = traverse (\r -> findEither r scope >>= return . (,) r) request
-          scopeError (VariableScope var) = VariableNotFound var
-          scopeError (LabelScope label)  = LabelNotFound label
+linkScope :: Tree (NodeId, ([ScopeEffect], Scope)) -> Result (Tree Scope)
+linkScope = sequenceE id . fmap (\(i, d) -> sequenceE (fmap (scopeError i)) $ result d)
+    where result (request, scope) = fmap (\r -> (,) r <$> findEither r scope) request
+          sequenceE f = sequenceErrors (JoinedError . f)
+          scopeError i (VariableScope var) = VariableNotFound var i
+          scopeError i (LabelScope label)  = LabelNotFound label  i
 
 declarationScope :: Program NodeId -> Scope
 declarationScope p@(Program declarations _) = fmap (\el -> (dscope el, DeclarationLink el)) declarations
 
 
 linkProgram' :: Program NodeId -> Result (Tree Scope)
-linkProgram' program@(Program _ i) = linkScope (mzip requests scope)
+linkProgram' program@(Program _ i) = linkScope $ mzip ids (mzip requests scope)
     where (changes, requests) = munzip (localScope program)
           ids = Node i $ selectorProg getDeclData extract program
           scope = scopeTree (declarationScope program) (mzip changes (linksTree program))

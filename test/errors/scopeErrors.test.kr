@@ -1,0 +1,32 @@
+program {
+    frame variableNotFound {
+        var a : int16
+        a = 5
+        c = 6
+
+        a = b
+        d = a
+
+        b = d
+    }
+
+    frame labelNotFound {
+        loop (LOOP) {
+            break (LOOP)
+            break (BOOP)
+        }
+    }
+
+    frame frameNotFound {
+        call <labelNotFound>()
+        call <notExists>()
+    }
+}
+======= errors =======
+errors/scopeErrors:5:9:	[Scope error]:	Variable c not found in the scope
+errors/scopeErrors:7:9:	[Scope error]:	Variable b not found in the scope
+errors/scopeErrors:8:9:	[Scope error]:	Variable d not found in the scope
+errors/scopeErrors:10:9:	[Scope error]:	Variable b not found in the scope
+errors/scopeErrors:10:9:	[Scope error]:	Variable d not found in the scope
+errors/scopeErrors:16:13:	[Scope error]:	Label BOOP not found in the scope
+errors/scopeErrors:22:9:	[Scope error]:	Label notExists not found in the scope

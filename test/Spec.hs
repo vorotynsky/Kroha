@@ -3,14 +3,17 @@ import Test.HUnit  ( runTestTT, errors, failures )
 import System.Exit ( exitFailure, exitSuccess )
 
 cases =
-    [ "frameVariables"
-    , "variableDeclarations"
-    , "functionDeclaration"
-    , "functionCall"
-    , "if"
-    , "ifelse"
-    , "nestedIfs"
-    , "loops" ]
+    [ "examples/frameVariables"
+    , "examples/variableDeclarations"
+    , "examples/functionDeclaration"
+    , "examples/functionCall"
+    , "examples/if"
+    , "examples/ifelse"
+    , "examples/nestedIfs"
+    , "examples/loops"
+    
+    , "errors/scopeErrors"
+    , "errors/typeErrors" ]
 
 
 main :: IO ()
