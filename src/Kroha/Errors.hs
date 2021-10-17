@@ -6,7 +6,6 @@ import Data.Bifunctor (bimap, first)
 import Data.Either (partitionEithers)
 import Data.Foldable (toList)
 import Data.List.Extra
--- import Data.List (intercalate, sort, groupBy, nub)
 import Data.Maybe (fromMaybe)
 import Text.Parsec (SourcePos, sourceName, sourceColumn, sourceLine)
 

@@ -29,7 +29,7 @@ requestVars = mapMaybe (fmap VariableScope . rvalueScope)
     where rvalueScope (AsRValue (VariableLVal name)) = Just name
           rvalueScope _                              = Nothing
 
-scope :: Selector d ([PushToScope], [RequestFromScope])
+scope :: FrameElement d -> ([PushToScope], [RequestFromScope])
 scope (Instructions _ _)                                = ([]                    , [])
 scope (VariableDeclaration (StackVariable name _) _)    = ([VariableScope name ] , [])
 scope (VariableDeclaration (RegisterVariable name _) _) = ([VariableScope name ] , [])
