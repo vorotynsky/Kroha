@@ -4,11 +4,17 @@ import Data.Either.Extra (fromEither)
 import Data.Algorithm.Diff (getGroupedDiff, Diff, PolyDiff(..))
 import Test.HUnit
 import Kroha (kroha)
+import Data.List (dropWhileEnd, find)
+import Data.Char (isSpace)
+import Data.Maybe (isJust, fromJust)
+import Control.Monad (join)
+import Data.List.Extra (trim)
+import Data.Tuple.Extra (both)
 
 type TestName = String
 
 toFile :: String -> TestName -> String
-toFile sufix name = "test/examples/" ++ name ++ sufix
+toFile sufix name = "test/" ++ name ++ sufix
 
 printDiff :: [Diff [String]] -> String
 printDiff = concatMap show1
@@ -32,11 +38,24 @@ assertProgram name expected actual =
         ioError (userError ("\n" ++ generateError name expected actual))
 
 
+splitLines :: String -> String -> [String]
+splitLines sep text = doUntil (split1 sep) (lines text)
+    where trim = dropWhileEnd isSpace . dropWhile isSpace
+          split1 p t = (unlines $ takeWhile (\x -> trim x /= p) t, safeTail $ dropWhile (/= p) t)
+          safeTail x = case x of [] -> []; (_:t) -> t
+          doUntil f [] = []
+          doUntil f xs = let (curr, tail) = f xs in curr : doUntil f tail
+
+splitBy :: String -> String -> Maybe (String, String)
+splitBy label test = case splitLines ("======= " ++ label ++ " =======") test of [a, b] -> Just(a, b); _ -> Nothing
+
 testCase :: TestName -> Test
 testCase name = TestCase $ do
-    [program, expected] <- mapM readFile [toFile ".kr" name, toFile ".s" name]
-    let actual = fromEither $ kroha program
+    text <- readFile $ toFile ".test.kr" name
+    let (program, expected) = both trim $ extract text
+    let actual = trim . fromEither $ kroha name program
     assertProgram name expected actual
+    where extract text = fromJust . join . find isJust . fmap (`splitBy` text) $ ["nasm", "errors"]
 
 tests :: [TestName] -> Test
 tests names = TestList $ fmap (\name -> TestLabel name (testCase name)) names

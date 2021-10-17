@@ -7,9 +7,9 @@ import           System.Environment (getArgs)
 import           System.Exit        (exitFailure, exitSuccess)
 import           Kroha
 
-parse :: [String] -> IO String
+parse :: [(String, String)] -> IO String
 parse contents = do
-                 let (errors, results) = partitionEithers . fmap kroha $ contents
+                 let (errors, results) = partitionEithers . fmap (uncurry kroha) $ contents
                  errors <- traverse putStrLn errors
                  if null errors then pure () else exitFailure
                  return $ intercalate "\n\n" results
@@ -18,6 +18,6 @@ main :: IO ()
 main = do
     args <- getArgs
     contents <- mapM readFile args
-    parsed <- parse contents
+    parsed <- parse (zip args contents)
     putStrLn "; build with Kroha\n; see: https://github.com/vorotynsky/Kroha \n"
     putStrLn parsed          

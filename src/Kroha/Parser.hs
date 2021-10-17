@@ -1,4 +1,4 @@
--- Copyright (c) 2020 Vorotynsky Maxim
+-- Copyright (c) 2020 - 2021 Vorotynsky Maxim
 
 {-# LANGUAGE FlexibleContexts #-}
 
@@ -7,7 +7,7 @@ module Kroha.Parser (Kroha.Parser.parse) where
 import           Kroha.Ast
 import           Kroha.Errors
 
-import           Data.Bifunctor     (bimap)
+import           Data.Bifunctor     (first)
 import           Data.Maybe         (maybeToList)
 import           Data.Tree          (Tree (..), unfoldTreeM)
 import           Data.Tuple.Extra   (curry3)
@@ -20,6 +20,12 @@ nat = fmap read (many1 digit)
 
 aparse :: Parser a -> Parser a
 aparse  = let spaces = many space in between spaces spaces
+
+krP p = do
+    begin <- getPosition
+    value <- p
+    end <- getPosition
+    return $ value (begin, end)
 
 achar   = aparse . char
 keyword word = aparse $ try (string word <* space)
@@ -41,33 +47,33 @@ lvalue = aparse lvalue'
 rvalue' = (RLiteral<$> literal) <|> (AsRValue <$> lvalue')
 rvalue = aparse rvalue'
 
-break  = Break  <$> (keyword "break" *> parens name)
-inline = Inline <$> aparse (char '!' *> many (noneOf "\n"))
-call   = Call   <$> (keyword "call" *> angles name) <*> parens (rvalue `sepBy` achar ',')
+break  = krP $ Break  <$> (keyword "break" *> parens name)
+inline = krP $ Inline <$> aparse (char '!' *> many (noneOf "\n"))
+call   = krP $ Call   <$> (keyword "call" *> angles name) <*> parens (rvalue `sepBy` achar ',')
 
-vtype = PointerType <$> (achar '&' *> vtype) 
-    <|> TypeName <$> name  
+vtype = PointerType <$> (achar '&' *> vtype)
+    <|> TypeName <$> name
 
-register = aparse $ VariableDeclaration <$> (RegisterVariable <$> (keyword "reg" *> name) <*> (achar ':' *> name ))
-variable = aparse $ VariableDeclaration <$> (StackVariable    <$> (keyword "var" *> name) <*> (achar ':' *> vtype))
+register = krP . aparse $ VariableDeclaration <$> (RegisterVariable <$> (keyword "reg" *> name) <*> (achar ':' *> name ))
+variable = krP . aparse $ VariableDeclaration <$> (StackVariable    <$> (keyword "var" *> name) <*> (achar ':' *> vtype))
 
-assignment = Assignment <$> lvalue <*> (achar '=' *> rvalue)
+assignment = krP $ Assignment <$> lvalue <*> (achar '=' *> rvalue)
 
 condition = curry3 Condition <$> rvalue <*> cond <*> rvalue
     where p x s = const x <$> string s
           cond = p Equals "=="  <|> p NotEquals "!=" <|> p Greater ">" <|> p Less "<"
 
 instrSet p = Instructions <$> (aparse . many $ aparse p)
-block = braces . instrSet
+block = krP . braces . instrSet
 
-loop p = Loop <$> (keyword "loop" *> parens name) <*> (block p)
+loop p = krP $ Loop <$> (keyword "loop" *> parens name) <*> block p
 
-ifstatment p =
+ifstatment p = krP $
     do keyword "if"
        (cond, label) <- parens $ (,) <$> (condition <* achar ',') <*> name
        body <- block p
-       elseb <- (keyword "else" *> block p) <|> (pure $ Instructions [])
-       return $ If label cond body (elseb)
+       elseb <- (keyword "else" *> block p) <|> krP (pure (Instructions []))
+       return $ If label cond body elseb
 
 hlasm = reduce [ inline,              call,           Kroha.Parser.break,
                  register,            variable,
@@ -90,8 +96,10 @@ manualVar = manual "var" (ManualVariable <$> (aparse $ name) <*> (achar ':' *> v
 frame p = Frame <$> fname <*> block p
     where fname = (keyword "frame" *> name)
 
-globals = frame hlasm <|> constant <|> globvar <|> manualFrame <|> manualVar
-program = keyword "program" *> braces (many globals)
+globals = krP $ frame hlasm <|> constant <|> globvar <|> manualFrame <|> manualVar
+program = krP $ fmap Program parser
+    where parser = keyword "program" *> braces (many globals)
 
-parse :: String -> Result Program
-parse = bimap (ParserError . show) Program . Text.Parsec.parse program ""
+
+parse :: String -> String -> Either String (Program (SourcePos, SourcePos))
+parse name = first show . Text.Parsec.parse program name

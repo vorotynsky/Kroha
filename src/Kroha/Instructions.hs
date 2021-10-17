@@ -1,10 +1,11 @@
--- Copyright (c) 2020 Vorotynsky Maxim
+-- Copyright (c) 2020 - 2021 Vorotynsky Maxim
 
 module Kroha.Instructions where
 
 import Data.Tree
 import Data.Maybe (fromJust)
 import Data.Foldable (toList)
+import Control.Monad (void)
 import Control.Monad.Zip (mzip, mzipWith)
 
 import Kroha.Ast
@@ -15,21 +16,21 @@ import Kroha.Types
 
 type Section = String
 
-data Target 
+data Target
     = LiteralTarget Literal
     | StackTarget StackRange
     | RegisterTarget RegisterName
     | VariableTarget VariableName TypeName
     deriving (Show)
 
-data LabelTarget 
+data LabelTarget
     = CommonLabel Label
     | BeginLabel  Label
     | EndLabel    Label
     deriving (Show)
 
 data Instruction
-    = Body FrameElement Int
+    = Body (FrameElement ()) Int
     | Assembly String
     | Variable VariableName Int
     | Label LabelTarget
@@ -38,12 +39,12 @@ data Instruction
     | Jump LabelTarget (Maybe (Target, Comparator, Target))
     deriving (Show)
 
-type StackOffsetTree = Tree (NodeId, StackRange)
+type StackOffsetTree = Program (NodeId, StackRange)
 
-link2target ::  StackOffsetTree -> ScopeLink -> Target
-link2target s (ElementLink (VariableDeclaration (StackVariable _ _)) nid) = StackTarget . fromJust . lookup nid $ toList s
-link2target _ (ElementLink (VariableDeclaration (RegisterVariable _ reg)) _) = RegisterTarget reg
-link2target _ (DeclarationLink declaration _) = let (VariableScope name) = dscope declaration in VariableTarget name (declType declaration)
+link2target :: StackOffsetTree -> ScopeLink -> Target
+link2target s (ElementLink (VariableDeclaration (StackVariable _ _) nid)) = StackTarget . fromJust . lookup nid $ toList s
+link2target _ (ElementLink (VariableDeclaration (RegisterVariable _ reg) _)) = RegisterTarget reg
+link2target _ (DeclarationLink declaration) = let (VariableScope name) = dscope declaration in VariableTarget name (declType declaration)
 
 target :: StackOffsetTree -> Scope -> RValue -> Target
 target so s (AsRValue (VariableLVal var)) = link2target so . fromJust . lookup (VariableScope var) $ s
@@ -52,41 +53,42 @@ target _  _ (RLiteral literal)            = LiteralTarget literal
 
 transformCond sot s (Condition (left, cmp, right)) = (target sot s left, cmp, target sot s right)
 
-instruction :: StackOffsetTree -> Scope -> FrameElement -> [Instruction]
-instruction _   _ (Kroha.Ast.Instructions f)        = mzipWith Body f [0..]
-instruction _   _ (Kroha.Ast.VariableDeclaration _) = [  ]
+instruction :: StackOffsetTree -> FrameElement Scope -> [Instruction]
+instruction _   (Kroha.Ast.Instructions f _)        = mzipWith Body (fmap void f) [0..]
+instruction _   (Kroha.Ast.VariableDeclaration _ _) = [  ]
 
-instruction sot s (Kroha.Ast.If name cond t f)      = [ Jump (BeginLabel name) (Just $ transformCond sot s cond),
-                                                          Body f 1,
+instruction sot (Kroha.Ast.If name cond t f s)      = [ Jump (BeginLabel name) (Just $ transformCond sot s cond),
+                                                          Body (void f) 1,
                                                           Jump (EndLabel name) Nothing,
                                                         Label (BeginLabel name),
-                                                          Body t 0,
+                                                          Body (void t) 0,
                                                         Label (EndLabel name) ]
 
-instruction _   _ (Kroha.Ast.Loop name body)        = [ Label (BeginLabel name), 
-                                                          Body body 0, 
-                                                          Jump (BeginLabel name) Nothing, 
+instruction _   (Kroha.Ast.Loop name body _)        = [ Label (BeginLabel name),
+                                                          Body (void body) 0,
+                                                          Jump (BeginLabel name) Nothing,
                                                         Label (EndLabel name) ]
 
-instruction _   _ (Kroha.Ast.Break loop)            = [ Jump (EndLabel loop) Nothing ]
-instruction sot s (Kroha.Ast.Call name args)        = [ CallI (CommonLabel name) (fmap (target sot s) args) ]
-instruction sot s (Kroha.Ast.Assignment l r)        = [ Move (target sot s (AsRValue l)) (target sot s r) ]
-instruction _   _ (Kroha.Ast.Inline asm)            = [ Assembly asm ]
+instruction _   (Kroha.Ast.Break loop _)            = [ Jump (EndLabel loop) Nothing ]
+instruction sot (Kroha.Ast.Call name args s)        = [ CallI (CommonLabel name) (fmap (target sot s) args) ]
+instruction sot (Kroha.Ast.Assignment l r s)        = [ Move (target sot s (AsRValue l)) (target sot s r) ]
+instruction _   (Kroha.Ast.Inline asm _)            = [ Assembly asm ]
 
 
-declSection :: Declaration -> Section
-declSection (Frame _ _)              = "text"
-declSection (GlobalVariable _ _ _)   = "data"
-declSection (ConstantVariable _ _ _) = "rodata"
-declSection (ManualFrame _ _)        = "text"
-declSection (ManualVariable _ _ _)   = "data"
+declSection :: Declaration d -> Section
+declSection Frame { }            = "text"
+declSection GlobalVariable { }   = "data"
+declSection ConstantVariable { } = "rodata"
+declSection ManualFrame { }      = "text"
+declSection ManualVariable { }   = "data"
 
 
-buildDeclaration :: StackOffsetTree -> Tree Scope -> Declaration -> (Section, Declaration, Tree [Instruction])
-buildDeclaration sot (Node _ [scope]) d@(Frame _ frame) = (declSection d, d, instructions)
-    where instructions = mzipWith (instruction sot) scope (selector id frame)
-buildDeclaration _ _ d = (declSection d, d, Node [] [])
+buildDeclaration :: StackOffsetTree -> Declaration Scope -> (Section, Declaration (), Tree [Instruction])
+buildDeclaration sot d@(Frame _ frame _) = (declSection d, void d, instructions)
+    where instructions =  instruction sot <$> selector id frame
+buildDeclaration _ d = (declSection d, void d, Node [] [])
 
-instructions :: Tree StackRange -> Tree Scope -> Program -> [(Section, Declaration, Tree [Instruction])]
-instructions offsets (Node _ scopes) p@(Program declarations) = mzipWith (buildDeclaration sot) scopes declarations
-    where sot = mzip (progId p) offsets
+instructions :: Program (StackRange, Scope, NodeId) -> [(Section, Declaration (), Tree [Instruction])]
+instructions p@(Program decls _) = fmap mapper decls
+    where mapper decl = buildDeclaration sot $ fmap (\(_, x, _) -> x) decl
+          sot = fmap (\(st, _, i) -> (i, st)) p

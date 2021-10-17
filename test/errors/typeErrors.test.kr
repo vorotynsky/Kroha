@@ -1,0 +1,48 @@
+program {
+    frame main {
+        var x : int8
+        var y : int16
+
+        var e : int7
+
+        x = 0
+        y = 0
+        e = 0
+        e = 0
+
+        reg a : ax
+        reg z : zx
+
+        a = 0
+        z = 0
+        z = 0
+
+        a = %ax
+        a = %zx
+        z = %zx
+        e = %ax
+        e = %zs
+    }
+
+    var vv : int16 = 32
+    var er : int9  = 10
+
+    const cv : int16 = 32
+    const cr : int9  = 10
+
+    frame usages {
+        vv = 1
+        er = 2
+        cv = 3
+        cr = 4
+    }
+
+}
+======= errors =======
+errors/typeErrors:6:9:	[Type error]:	Unknown type TypeName "int7"
+errors/typeErrors:14:9:	[Type error]:	Unknown register name "zx"
+errors/typeErrors:21:9:	[Type error]:	Unknown register name "zx"
+errors/typeErrors:22:9:	[Type error]:	Unknown register name "zx"
+errors/typeErrors:24:9:	[Type error]:	Unknown register name "zs"
+errors/typeErrors:28:5:	[Type error]:	Unknown type TypeName "int9"
+errors/typeErrors:31:5:	[Type error]:	Unknown type TypeName "int9"

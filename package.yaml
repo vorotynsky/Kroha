@@ -1,5 +1,5 @@
 name:                Kroha
-version:             1.1.1.0
+version:             1.2.2.0
 github:              "vorotynsky/Kroha"
 license:             GPL-3
 author:              "Vorotynsky Maxim"
@@ -23,6 +23,8 @@ dependencies:
 - containers >= 0.6 && < 0.7
 - parsec >= 3.1.0 && <= 3.1.14.0
 - extra >= 1.0 && < 1.8
+- comonad >= 5 && < 5.1
+- hashmap >= 1.0.0 && < 1.4
 
 executables:
   Kroha:

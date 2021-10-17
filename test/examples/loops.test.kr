@@ -1,3 +1,26 @@
+program {
+  frame infLoop {
+    loop (IL) {
+      !inc ax
+    }
+  }
+
+  frame main {
+    reg x : ax
+
+    loop (JL) {
+      !inc ax
+
+      if (x > 5, BL) {
+        break (JL)
+      }
+    }
+
+    !nop
+  }
+}
+
+======= nasm =======
 section .text
 infLoop:
   IL_begin:

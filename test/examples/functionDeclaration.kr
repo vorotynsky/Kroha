@@ -1,9 +1,0 @@
-program {
-  frame start {
-    !nop
-  }
-
-  manual frame mf {
-    add ax, dx
-  }
-}

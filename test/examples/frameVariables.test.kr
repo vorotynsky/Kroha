@@ -1,0 +1,37 @@
+program {
+  frame register {
+    reg x : ax
+    reg y : bx
+
+    x = 5
+    y = x
+  }
+
+  frame stackNreg {
+    var x : int16
+    reg y : ax
+
+    x = 5
+    y = x
+    x = y
+    y = 6
+  }
+}
+
+======= nasm =======
+section .text
+register:
+  mov ax, 5
+  mov bx, ax
+leave
+ret
+
+section .text
+stackNreg:
+  mov word [bp - 2], 5
+  mov ax, [bp - 2]
+  mov word [bp - 2], ax
+  mov ax, 6
+leave
+ret
+
