@@ -9,7 +9,7 @@ import Data.List.Extra (groupSort)
 import Data.Bifunctor (first)
 import Data.Maybe (fromJust)
 
-import Kroha.Ast
+import Kroha.Syntax
 import Kroha.Backends.Common
 import Kroha.Types
 import Kroha.Instructions (Instruction(..), LabelTarget(..), Target(..), Section)

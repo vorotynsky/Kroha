@@ -4,7 +4,7 @@ import           Data.Bifunctor        (first)
 import           Data.Foldable         (toList)
 import           Data.HashMap          (fromList, lookup)
 
-import           Kroha.Ast             (NodeId, Program, genId, pzip, pzip3)
+import           Kroha.Syntax             (NodeId, Program, genId, pzip, pzip3)
 import           Kroha.Backends.Common (runBackend, typeConfig)
 import           Kroha.Backends.Nasm   (nasm)
 import           Kroha.Errors          (Result, showErrors)

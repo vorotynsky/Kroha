@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE RankNTypes #-}
 
-module Kroha.Ast where
+module Kroha.Syntax where
 
 import Control.Comonad
 import Data.Tree

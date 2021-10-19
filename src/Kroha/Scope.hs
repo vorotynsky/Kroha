@@ -12,7 +12,7 @@ import           Data.Foldable     (find)
 import           Data.Maybe        (fromJust, mapMaybe)
 import           Data.Tree         (Tree (..))
 
-import           Kroha.Ast
+import           Kroha.Syntax
 import           Kroha.Errors
 
 

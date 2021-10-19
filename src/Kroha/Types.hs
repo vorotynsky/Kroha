@@ -10,7 +10,7 @@ import Control.Monad (join)
 import Data.List.Extra (elemIndex)
 import Data.Either.Extra (maybeToEither)
 
-import Kroha.Ast
+import Kroha.Syntax
 import Kroha.Scope
 import Kroha.Errors
 

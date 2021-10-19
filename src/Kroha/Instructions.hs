@@ -8,7 +8,7 @@ import Data.Foldable (toList)
 import Control.Monad (void)
 import Control.Monad.Zip (mzip, mzipWith)
 
-import Kroha.Ast
+import Kroha.Syntax
 import Kroha.Scope
 import Kroha.Stack
 import Kroha.Types
@@ -54,25 +54,25 @@ target _  _ (RLiteral literal)            = LiteralTarget literal
 transformCond sot s (Condition (left, cmp, right)) = (target sot s left, cmp, target sot s right)
 
 instruction :: StackOffsetTree -> FrameElement Scope -> [Instruction]
-instruction _   (Kroha.Ast.Instructions f _)        = mzipWith Body (fmap void f) [0..]
-instruction _   (Kroha.Ast.VariableDeclaration _ _) = [  ]
+instruction _   (Instructions f _)        = mzipWith Body (fmap void f) [0..]
+instruction _   (VariableDeclaration _ _) = [  ]
 
-instruction sot (Kroha.Ast.If name cond t f s)      = [ Jump (BeginLabel name) (Just $ transformCond sot s cond),
-                                                          Body (void f) 1,
-                                                          Jump (EndLabel name) Nothing,
-                                                        Label (BeginLabel name),
-                                                          Body (void t) 0,
-                                                        Label (EndLabel name) ]
+instruction sot (If name cond t f s)      = [ Jump (BeginLabel name) (Just $ transformCond sot s cond),
+                                                Body (void f) 1,
+                                                Jump (EndLabel name) Nothing,
+                                              Label (BeginLabel name),
+                                                Body (void t) 0,
+                                              Label (EndLabel name) ]
 
-instruction _   (Kroha.Ast.Loop name body _)        = [ Label (BeginLabel name),
-                                                          Body (void body) 0,
-                                                          Jump (BeginLabel name) Nothing,
-                                                        Label (EndLabel name) ]
+instruction _   (Loop name body _)        = [ Label (BeginLabel name),
+                                                Body (void body) 0,
+                                                Jump (BeginLabel name) Nothing,
+                                              Label (EndLabel name) ]
 
-instruction _   (Kroha.Ast.Break loop _)            = [ Jump (EndLabel loop) Nothing ]
-instruction sot (Kroha.Ast.Call name args s)        = [ CallI (CommonLabel name) (fmap (target sot s) args) ]
-instruction sot (Kroha.Ast.Assignment l r s)        = [ Move (target sot s (AsRValue l)) (target sot s r) ]
-instruction _   (Kroha.Ast.Inline asm _)            = [ Assembly asm ]
+instruction _   (Break loop _)            = [ Jump (EndLabel loop) Nothing ]
+instruction sot (Call name args s)        = [ CallI (CommonLabel name) (fmap (target sot s) args) ]
+instruction sot (Assignment l r s)        = [ Move (target sot s (AsRValue l)) (target sot s r) ]
+instruction _   (Inline asm _)            = [ Assembly asm ]
 
 
 declSection :: Declaration d -> Section

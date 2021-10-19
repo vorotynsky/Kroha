@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 module Kroha.Errors where
 
-import Kroha.Ast
+import Kroha.Syntax
 import Data.Bifunctor (bimap, first)
 import Data.Either (partitionEithers)
 import Data.Foldable (toList)

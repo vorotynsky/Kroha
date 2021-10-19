@@ -26,7 +26,6 @@ executable Kroha
   main-is: Main.hs
   other-modules:
       Kroha
-      Kroha.Ast
       Kroha.Backends.Common
       Kroha.Backends.Nasm
       Kroha.Errors
@@ -34,6 +33,7 @@ executable Kroha
       Kroha.Parser
       Kroha.Scope
       Kroha.Stack
+      Kroha.Syntax
       Kroha.Types
       Paths_Kroha
   hs-source-dirs:
@@ -53,7 +53,6 @@ test-suite Kroha-tests
   other-modules:
       Case
       Kroha
-      Kroha.Ast
       Kroha.Backends.Common
       Kroha.Backends.Nasm
       Kroha.Errors
@@ -61,6 +60,7 @@ test-suite Kroha-tests
       Kroha.Parser
       Kroha.Scope
       Kroha.Stack
+      Kroha.Syntax
       Kroha.Types
       Main
       Paths_Kroha

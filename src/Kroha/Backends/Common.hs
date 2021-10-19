@@ -1,6 +1,6 @@
 module Kroha.Backends.Common (Backend(..), runBackend) where
 
-import Kroha.Ast (Declaration(..))
+import Kroha.Syntax (Declaration(..))
 import Kroha.Types (TypeConfig)
 import Kroha.Instructions (Instruction(Body), Section)
 

@@ -4,7 +4,7 @@
 
 module Kroha.Parser (Kroha.Parser.parse) where
 
-import           Kroha.Ast
+import           Kroha.Syntax
 import           Kroha.Errors
 
 import           Data.Bifunctor     (first)
