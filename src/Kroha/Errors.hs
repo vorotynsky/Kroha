@@ -7,7 +7,8 @@ import Data.Either (partitionEithers)
 import Data.Foldable (toList)
 import Data.List.Extra
 import Data.Maybe (fromMaybe)
-import Text.Parsec (SourcePos, sourceName, sourceColumn, sourceLine)
+import Text.Megaparsec (SourcePos, sourceName, sourceColumn, sourceLine)
+import Text.Megaparsec.Pos (unPos)
 
 type Result a = Either Error a
 
@@ -63,6 +64,6 @@ showErrors findRange = intercalate "\n" . fmap (uncurry showError) . process . t
           showError r (VariableNotFound var d) = r ++ "[Scope error]:\t" ++ "Variable " ++ var   ++ " not found in the scope"
           showError r (LabelNotFound label d)  = r ++ "[Scope error]:\t" ++ "Label "    ++ label ++ " not found in the scope"
           showError r (BackendError message)   = "[Asm error]: \n" ++ (unlines . fmap ((++) "\t") . lines) message
-          showRange' (begin, end) = sourceName begin ++ ":" ++ show (sourceLine begin) ++ ":" ++ show (sourceColumn begin) ++ ":\t"
+          showRange' (begin, end) = sourceName begin ++ ":" ++ show (unPos $ sourceLine begin) ++ ":" ++ show (unPos $ sourceColumn begin) ++ ":\t"
           zipFrom (a, b) = fmap (a, ) b
           process = concatMap (zipFrom . bimap (maybe "" showRange') nub) . groupSort . map (\x -> (findRange $ getErrorId x, x))

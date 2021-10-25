@@ -30,7 +30,9 @@ executable Kroha
       Kroha.Backends.Nasm
       Kroha.Errors
       Kroha.Instructions
-      Kroha.Parser
+      Kroha.Parser.Declarations
+      Kroha.Parser.Lexer
+      Kroha.Parser.Statements
       Kroha.Scope
       Kroha.Stack
       Kroha.Syntax
@@ -44,7 +46,7 @@ executable Kroha
     , containers ==0.6.*
     , extra >=1.0 && <1.8
     , hashmap >=1.0.0 && <1.4
-    , parsec >=3.1.0 && <=3.1.14.0
+    , megaparsec >=8.0.0 && <=10.0.0
   default-language: Haskell2010
 
 test-suite Kroha-tests
@@ -57,7 +59,9 @@ test-suite Kroha-tests
       Kroha.Backends.Nasm
       Kroha.Errors
       Kroha.Instructions
-      Kroha.Parser
+      Kroha.Parser.Declarations
+      Kroha.Parser.Lexer
+      Kroha.Parser.Statements
       Kroha.Scope
       Kroha.Stack
       Kroha.Syntax
@@ -75,5 +79,5 @@ test-suite Kroha-tests
     , containers ==0.6.*
     , extra >=1.0 && <1.8
     , hashmap >=1.0.0 && <1.4
-    , parsec >=3.1.0 && <=3.1.14.0
+    , megaparsec >=8.0.0 && <=10.0.0
   default-language: Haskell2010
