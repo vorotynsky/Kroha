@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 module Kroha.Errors where
 
 import Kroha.Syntax

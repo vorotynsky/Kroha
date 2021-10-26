@@ -1,7 +1,5 @@
 -- Copyright (c) 2020 - 2021 Vorotynsky Maxim
 
-{-# LANGUAGE TupleSections #-}
-
 module Kroha.Scope where
 
 import           Control.Comonad   (extract)

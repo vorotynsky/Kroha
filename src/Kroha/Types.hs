@@ -1,7 +1,5 @@
 -- Copyright (c) 2020 - 2021 Vorotynsky Maxim
 
-{-# LANGUAGE ImplicitParams #-}
-
 module Kroha.Types where
 
 import Data.Graph (Tree(..), Graph(..), path)

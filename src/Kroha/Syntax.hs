@@ -1,8 +1,5 @@
 -- Copyright (c) 2020 - 2021 Vorotynsky Maxim
 
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE RankNTypes #-}
-
 module Kroha.Syntax where
 
 import Control.Comonad
