@@ -32,7 +32,10 @@ ifStatement pStatement = krP $
 
 loop ps = krP $ Loop <$> (loop' *> parens name) <*> body' ps
 
-statement = choice [ inline, call, Kroha.Parser.Statements.break,
-                     register, variable, assignment,
-                     ifStatement statement, loop statement ]
+statement = choice ( fmap (<* end)
+                     [ inline, call, Kroha.Parser.Statements.break,
+                       register, variable, assignment ] 
+                     ++
+                     [ ifStatement statement, loop statement ]
+                   )
             <?> "statement"

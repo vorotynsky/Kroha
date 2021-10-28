@@ -1,0 +1,33 @@
+program {
+    frame main {
+        var x : int16;
+        reg y : ax;
+
+        y = x; x = y;
+
+        loop (L) {
+            if (x > y, C) {
+                break (L);
+            } else {
+                break (L)
+            }
+        }
+    }
+}
+======= nasm =======
+section .text
+main:
+  mov ax, [bp - 2]
+  mov word [bp - 2], ax
+  L_begin:
+      cmp word [bp - 2], ax
+      jg C_begin
+          jmp L_end
+      jmp C_end
+      C_begin:
+          jmp L_end
+      C_end:
+  jmp L_begin
+  L_end:
+leave
+ret

@@ -8,6 +8,7 @@ import Text.Megaparsec
 import Data.Void (Void)
 import Kroha.Syntax
 import Kroha.Types (TypeConfig(literalType))
+import Control.Monad (void)
 
 
 type Parser = Parsec Void String
@@ -20,6 +21,9 @@ lexeme = L.lexeme sc
 
 symbol :: String -> Parser String
 symbol = L.symbol sc
+
+end :: Parser ()
+end = void . lexeme . optional . char $ ';'
 
 nat :: Parser Int
 nat = lexeme L.decimal
