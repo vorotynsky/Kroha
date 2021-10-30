@@ -42,13 +42,14 @@ braces = around "{" "}"
 
 name, name' :: Parser String
 name' = (:) <$> letterChar <*> many (alphaNumChar <|> char '_')
-name = lexeme (name' <?> "variable")
+name = lexeme (name' <?> "identifier")
 
-literal = IntegerLiteral <$> nat
-lvalue = (VariableLVal <$> name) <|> (RegisterLVal <$> lexeme (char '%' *> name'))
+literal = IntegerLiteral <$> nat <?> "integer literal"
+lvalue = (VariableLVal <$> name <?> "variable name") <|> (RegisterLVal <$> lexeme (char '%' *> name') <?> "register name")
 rvalue = (RLiteral <$> literal) <|> (AsRValue <$> lvalue)
 
-typeName = (PointerType <$> lexeme (char '&' *> typeName)) <|> (TypeName <$> name)
+typeName = (PointerType <$> lexeme (char '&' *> typeName)) <|> (TypeName <$> name) <?> "type name"
+typeSpecification = symbol ":" *> typeName <?> "type specification"
 
 -- keywords --
 break'         = symbol "break"

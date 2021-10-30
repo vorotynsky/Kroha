@@ -8,23 +8,29 @@ import Text.Megaparsec
 import Data.Bifunctor (first)
 import Kroha.Parser.Statements (body, statement)
 
-globalVariable w f = f <$> (w *> name) <*> (symbol ":" *> typeName) <*> (symbol "=" *> literal)
+globalVariable w f = f <$> (w *> name) <*> typeSpecification <*> (symbol "=" *> literal)
 
 constant = globalVariable const' ConstantVariable
 variable = globalVariable var'   GlobalVariable
 
-manual w d = do
-             try (manual' *> w)
-             def <- d
+manuals ps = do
+             manual'
+             decl <- foldl (<|>) empty ps
              code <- braces (many (noneOf "}"))
-             return (def code)
+             return (decl code)
 
-manualFrame = manual frame' (ManualFrame    <$> name)
-manualVar   = manual var'   (ManualVariable <$> name <*> (symbol ":" *> typeName))
+manualDeclarations = manuals 
+    [ ManualFrame    <$> (frame' *> name)
+    , ManualVariable <$> (var'   *> name) <*> typeSpecification]
 
 frame = Frame <$> (frame' *> name) <*> body statement 
 
-globals = krP $ choice [constant, variable, manualFrame, manualVar, frame]
+globals = recover (choice (fmap krP [constant, variable, manualDeclarations, frame]) <?> "declaration")
+    where recover = withRecovery $ \e -> do
+                        registerParseError e
+                        krP skip
+          skip = do someTill (satisfy (const True)) (const' <|> var' <|> manual' <|> frame') 
+                    return (ManualFrame "" "'")
 
 program = krP $ Program <$> (program' *> braces (many globals))
 

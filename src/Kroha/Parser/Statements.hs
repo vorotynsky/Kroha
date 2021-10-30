@@ -12,8 +12,8 @@ break  = krP $ Break  <$> (break' *> parens name)
 inline = krP (Inline <$> (symbol "!" *> many (noneOf "\n"))) <* space1
 call   = krP $ Call   <$> (call' *> angles name) <*> parens (rvalue `sepBy` symbol ",")
 
-register = krP $ VariableDeclaration <$> (RegisterVariable <$> (reg' *> name) <*> (symbol ":" *> name))
-variable = krP $ VariableDeclaration <$> (StackVariable    <$> (var' *> name) <*> (symbol ":" *> typeName))
+register = krP $ VariableDeclaration <$> (RegisterVariable <$> (reg' *> name) <*> (symbol ":" *> (name <?> "register name")))
+variable = krP $ VariableDeclaration <$> (StackVariable    <$> (var' *> name) <*> typeSpecification)
 
 assignment = krP $ Assignment <$> try (lvalue <* symbol "=") <*> rvalue
 
@@ -32,10 +32,16 @@ ifStatement pStatement = krP $
 
 loop ps = krP $ Loop <$> (loop' *> parens name) <*> body' ps
 
-statement = choice ( fmap (<* end)
+statement = recover (choice ( fmap (<* end)
                      [ inline, call, Kroha.Parser.Statements.break,
                        register, variable, assignment ] 
                      ++
                      [ ifStatement statement, loop statement ]
                    )
-            <?> "statement"
+            <?> "statement")
+    where recover = withRecovery $ \e -> do
+            registerParseError e
+            krP (skip ";\n}")
+          skip s = do some (noneOf s)
+                      oneOf s
+                      return $ Instructions []
