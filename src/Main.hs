@@ -1,10 +1,9 @@
 module Main where
 
-import           Data.Either.Extra  (fromEither)
 import           Data.Either        (partitionEithers)
 import           Data.List          (intercalate)
 import           System.Environment (getArgs)
-import           System.Exit        (exitFailure, exitSuccess)
+import           System.Exit        (exitFailure)
 import           Kroha
 
 parse :: [(String, String)] -> IO String

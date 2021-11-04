@@ -2,7 +2,7 @@
 
 module Kroha.Types where
 
-import Data.Graph (Tree(..), Graph(..), path)
+import Data.Graph (Graph, path)
 import Data.Bifunctor (bimap)
 import Control.Monad (join)
 import Data.List.Extra (elemIndex)
@@ -28,6 +28,8 @@ declType :: Declaration d -> TypeName
 declType (GlobalVariable   _ t _ _) = t
 declType (ConstantVariable _ t _ _) = t
 declType (ManualVariable   _ t _ _) = t
+declType (Frame              l _ _) = error $ "[Exception]: Unexpected declaration to extract type. \tError location: Frame       (" ++ l ++ ")"
+declType (ManualFrame        l _ _) = error $ "[Exception]: Unexpected declaration to extract type. \tError location: ManualFrame (" ++ l ++ ")" 
 
 
 getType :: (?tc :: TypeConfig) => ScopeLink -> Result TypeId
@@ -44,7 +46,7 @@ rvalType _ (AsRValue (RegisterLVal reg )) nid = maybeToEither (UnknownRegister r
 
 type TypeCast = (TypeId, TypeId)
 
-extractE (a, b) = (\[a, b] -> (a, b)) <$> sequenceErrors JoinedError [a, b]
+extractE (a, b) = (\[a', b'] -> (a', b')) <$> sequenceErrors JoinedError [a, b]
 
 makeTypeCast :: (?tc :: TypeConfig) => Scope -> NodeId -> (RValue, RValue) -> Result TypeCast
 makeTypeCast scope nid values = extractE $ bimap find find values
@@ -70,5 +72,5 @@ resolve :: TypeConfig -> Program (NodeId, [TypeCast]) -> Result (Program [TypeCa
 resolve config = processError (map (resolveCast (typeCasts config)) . append)
     where resolveCast g (nid, c@(f, t)) = if path g f t then Right c else Left (nid, c)
           typeName (nid, (t1, t2)) = let name typeId = fst $ types config !! typeId in TypeCastError (name t2) (name t1) nid
-          append (a, l) = fmap ((,) a) l
+          append (a, l) = fmap (a,) l
           processError f = sequenceErrors JoinedError . fmap (sequenceErrors (JoinedError . map typeName) . f)

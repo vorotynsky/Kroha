@@ -67,15 +67,15 @@ data Declaration d
 data Program d = Program [Declaration d] d
     deriving (Show, Eq, Functor, Foldable, Traversable)
 
-childs :: FrameElement d -> [FrameElement d]
-childs (Instructions xs _)       = xs
-childs (VariableDeclaration x _) = []
-childs (If _ _ b e _)            = [b, e]
-childs (Loop _ b _)              = [b]
-childs (Break _ _)               = []
-childs (Call _ _ _)              = []
-childs (Assignment _ _ _)        = []
-childs (Inline _ _)              = []
+children :: FrameElement d -> [FrameElement d]
+children (Instructions xs _)       = xs
+children (VariableDeclaration x _) = []
+children (If _ _ b e _)            = [b, e]
+children (Loop _ b _)              = [b]
+children (Break _ _)               = []
+children (Call _ _ _)              = []
+children (Assignment _ _ _)        = []
+children (Inline _ _)              = []
 
 getDeclData :: Declaration d -> d
 getDeclData (Frame _ _ d)              = d
@@ -85,9 +85,8 @@ getDeclData (ManualFrame _ _ d)        = d
 getDeclData (ManualVariable _ _ _ d)   = d
 
 
-
 selector :: (FrameElement d -> a) -> FrameElement d -> Tree a
-selector s = unfoldTree (\e -> (s e, childs e))
+selector s = unfoldTree (\e -> (s e, children e))
 
 selectorProg :: (Declaration d -> a) -> (FrameElement d -> a) -> Program d -> Forest a
 selectorProg df sf (Program declarations _) = fmap mapper declarations

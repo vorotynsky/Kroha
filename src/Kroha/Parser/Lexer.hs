@@ -7,7 +7,6 @@ import Text.Megaparsec.Char
 import Text.Megaparsec
 import Data.Void (Void)
 import Kroha.Syntax
-import Kroha.Types (TypeConfig(literalType))
 import Control.Monad (void)
 
 

@@ -6,7 +6,7 @@ import Data.Tree
 import Data.Maybe (fromJust)
 import Data.Foldable (toList)
 import Control.Monad (void)
-import Control.Monad.Zip (mzip, mzipWith)
+import Control.Monad.Zip (mzipWith)
 
 import Kroha.Syntax
 import Kroha.Scope
@@ -32,7 +32,6 @@ data LabelTarget
 data Instruction
     = Body (FrameElement ()) Int
     | Assembly String
-    | Variable VariableName Int
     | Label LabelTarget
     | Move Target Target
     | CallI LabelTarget [Target]
@@ -45,6 +44,7 @@ link2target :: StackOffsetTree -> ScopeLink -> Target
 link2target s (ElementLink (VariableDeclaration (StackVariable _ _) nid)) = StackTarget . fromJust . lookup nid $ toList s
 link2target _ (ElementLink (VariableDeclaration (RegisterVariable _ reg) _)) = RegisterTarget reg
 link2target _ (DeclarationLink declaration) = let (VariableScope name) = dscope declaration in VariableTarget name (declType declaration)
+link2target _ l = error ("[Exception]: Unexpected link for building target. Problem link: " ++ show l)
 
 target :: StackOffsetTree -> Scope -> RValue -> Target
 target so s (AsRValue (VariableLVal var)) = link2target so . fromJust . lookup (VariableScope var) $ s

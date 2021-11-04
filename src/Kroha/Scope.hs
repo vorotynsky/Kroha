@@ -3,9 +3,7 @@
 module Kroha.Scope where
 
 import           Control.Comonad   (extract)
-import           Control.Monad     (void)
-import           Control.Monad.Zip (munzip, mzip, mzipWith)
-import           Data.Bifunctor    (first)
+import           Control.Monad.Zip (munzip, mzip)
 import           Data.Foldable     (find)
 import           Data.Maybe        (fromJust, mapMaybe)
 import           Data.Tree         (Tree (..))
@@ -50,7 +48,7 @@ dscope' d = ([dscope d], [] :: [RequestFromScope])
 type Scope = [(PushToScope, ScopeLink)]
 
 toRight _ (Just x) = Right x
-toRight x (Nothing) = Left x
+toRight x Nothing  = Left x
 
 findEither k = toRight k . lookup k
 
@@ -67,9 +65,9 @@ linksTree :: Program NodeId -> Tree ScopeLink
 linksTree program = Node (RootProgramLink program) $ selectorProg DeclarationLink ElementLink program
 
 scopeTree :: Scope -> Tree ([PushToScope], ScopeLink) -> Tree Scope
-scopeTree parent (Node effect childs) = Node (eZip effect ++ parent) childScope
+scopeTree parent (Node effect children) = Node (eZip effect ++ parent) childScope
     where folder acc child = ((eZip . rootLabel) child ++ fst acc, snd acc ++ [scopeTree (fst acc) child])
-          childScope = snd $ foldl folder (eZip effect ++ parent, []) childs
+          childScope = snd $ foldl folder (eZip effect ++ parent, []) children
           eZip (p, l) = fmap (, l) p
 
 linkScope :: Tree (NodeId, ([ScopeEffect], Scope)) -> Result (Tree Scope)

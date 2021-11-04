@@ -20,7 +20,7 @@ compile program = do
                   scopes  <- linkProgram program
                   let tc   = typeConfig nasm
                   casts   <- typeCastsTree tc scopes
-                  types   <- resolve tc (pzip program casts)
+                  _       <- resolve tc (pzip program casts)
                   let stackRanges = stack tc program
                   let prepared = instructions (pzip3 stackRanges (fmap snd scopes) program)
                   return (runBackend nasm prepared)
