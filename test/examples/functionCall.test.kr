@@ -4,7 +4,8 @@ program {
   }
 
   frame callFunction {
-    call <justFunc>()
+    call<justFunc>()
+    call justFunc()
     !nop
   }
 }
@@ -20,7 +21,8 @@ section .text
 callFunction:
   call justFunc
   add sp, 0
+  call justFunc
+  add sp, 0
   nop
 leave
 ret
-

@@ -5,11 +5,11 @@ program {
 
         y = x; x = y;
 
-        loop (L) {
+        loop L {
             if (x > y, C) {
-                break (L);
+                break L;
             } else {
-                break (L)
+                break L
             }
         }
     }

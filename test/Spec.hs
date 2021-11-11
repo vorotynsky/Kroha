@@ -12,6 +12,7 @@ cases =
     , "examples/nestedIfs"
     , "examples/loops"
     , "examples/semicolons"
+    , "examples/elseif"
     
     , "errors/scopeErrors"
     , "errors/typeErrors" ]

@@ -36,12 +36,15 @@ krP p = do
 around l r = between (symbol l) (symbol r)
 
 parens = around "(" ")"
-angles = around "<" ">"
 braces = around "{" "}"
+parensOpt p = parens p <|> p
+
 
 name, name' :: Parser String
 name' = (:) <$> letterChar <*> many (alphaNumChar <|> char '_')
 name = lexeme (name' <?> "identifier")
+
+callName = around "<" ">" name <|> name
 
 literal = IntegerLiteral <$> nat <?> "integer literal"
 lvalue = (VariableLVal <$> name <?> "variable name") <|> (RegisterLVal <$> lexeme (char '%' *> name') <?> "register name")

@@ -1,21 +1,19 @@
-program {
-  frame register {
-    reg x : ax
-    reg y : bx
+frame register {
+  reg x : ax
+  reg y : bx
 
-    x = 5
-    y = x
-  }
+  x = 5
+  y = x
+}
 
-  frame stackNreg {
-    var x : int16
-    reg y : ax
+frame stackNreg {
+  var x : int16
+  reg y : ax
 
-    x = 5
-    y = x
-    x = y
-    y = 6
-  }
+  x = 5
+  y = x
+  x = y
+  y = 6
 }
 
 ======= nasm =======
@@ -34,4 +32,3 @@ stackNreg:
   mov ax, 6
 leave
 ret
-

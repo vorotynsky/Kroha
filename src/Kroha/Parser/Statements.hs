@@ -8,9 +8,9 @@ import Text.Megaparsec
 import Data.Tuple.Extra (curry3)
 import Text.Megaparsec.Char (space1)
 
-break  = krP $ Break  <$> (break' *> parens name)
+break  = krP $ Break  <$> (break' *> parensOpt name)
 inline = krP (Inline <$> (symbol "!" *> many (noneOf "\n"))) <* space1
-call   = krP $ Call   <$> (call' *> angles name) <*> parens (rvalue `sepBy` symbol ",")
+call   = krP $ Call   <$> (call' *> callName) <*> parens (rvalue `sepBy` symbol ",")
 
 register = krP $ VariableDeclaration <$> (RegisterVariable <$> (reg' *> name) <*> (symbol ":" *> (name <?> "register name")))
 variable = krP $ VariableDeclaration <$> (StackVariable    <$> (var' *> name) <*> typeSpecification)
@@ -30,7 +30,7 @@ ifStatement pStatement = krP $
           p x s = x <$ symbol s
           cmpToken = p Equals "=="  <|> p NotEquals "!=" <|> p Greater ">" <|> p Less "<"
 
-loop ps = krP $ Loop <$> (loop' *> parens name) <*> body' ps
+loop ps = krP $ Loop <$> (loop' *> parensOpt name) <*> body' ps
 
 statement = recover (choice ( fmap (<* end)
                      [ inline, call, Kroha.Parser.Statements.break,

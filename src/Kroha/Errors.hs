@@ -49,11 +49,6 @@ toErrorList = concatMap mapper
           mapper error                = [error]
 
 
-sNub :: Eq a => [a] -> [a]
-sNub (a:b:tail) | a == b    = sNub (b:tail)
-                | otherwise = a:sNub (b:tail)
-sNub xs                     = xs
-
 showErrors :: (NodeId -> Maybe (SourcePos, SourcePos)) -> Error -> String
 showErrors findRange = intercalate "\n" . fmap (uncurry showError) . process . toErrorList . pure
     where showError _ (JoinedError _)          = undefined

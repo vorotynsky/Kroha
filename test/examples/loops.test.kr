@@ -1,23 +1,29 @@
-program {
-  frame infLoop {
-    loop (IL) {
-      !inc ax
+frame infLoop {
+  loop (IL) {
+    !inc ax
+  }
+
+  loop IL2 
+    !inc ax
+}
+
+frame main {
+  reg x : ax
+
+  loop JL {
+    !inc ax
+
+    if (x > 5, BL) {
+      break (JL)
     }
   }
 
-  frame main {
-    reg x : ax
-
-    loop (JL) {
-      !inc ax
-
-      if (x > 5, BL) {
-        break (JL)
-      }
-    }
-
-    !nop
+  loop PL {
+    !xor ax, ax
+    break PL
   }
+
+  !nop
 }
 
 ======= nasm =======
@@ -27,6 +33,10 @@ infLoop:
       inc ax
   jmp IL_begin
   IL_end:
+  IL2_begin:
+    inc ax
+  jmp IL2_begin
+  IL2_end:
 leave
 ret
 
@@ -42,7 +52,11 @@ main:
       BL_end:
   jmp JL_begin
   JL_end:
+  PL_begin:
+      xor ax, ax
+      jmp PL_end
+  jmp PL_begin
+  PL_end:
   nop
 leave
 ret
-

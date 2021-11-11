@@ -1,27 +1,24 @@
-program {
-  frame if_eq {
-    reg x : ax
-    
-    if (x == 5, A) {
-      !inc ax
-    }
-
-    !nop
+frame if_eq {
+  reg x : ax
+  
+  if (x == 5, A) {
+    !inc ax
   }
 
-  frame if_comp {
-    reg x : ax
+  !nop
+}
 
-    if (x > 5, B) {
-      !add ax, 5
-    }
+frame if_comp {
+  reg x : ax
 
-    if (x < 7, C) {
-      !sub ax, 7
-    }
-
-    !nop
+  if (x > 5, B) {
+    !add ax, 5
   }
+
+  if (x < 7, C)
+    !sub ax, 7
+
+  !nop
 }
 
 ======= nasm =======
@@ -49,9 +46,8 @@ if_comp:
   jl C_begin
   jmp C_end
   C_begin:
-      sub ax, 7
+    sub ax, 7
   C_end:
   nop
 leave
 ret
-

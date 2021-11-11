@@ -1,38 +1,36 @@
-program {
-  frame plot {
-    reg x : ax
-    reg y : bx
-    reg r : dx
+frame plot {
+  reg x : ax
+  reg y : bx
+  reg r : dx
 
-    if (x > 0, XP) {
-      if (y > 0, YP) {
-        r = 1
+  if (x > 0, XP) {
+    if (y > 0, YP) {
+      r = 1
+    } else {
+      if (y < 0, YP2) {
+        r = 4
       } else {
-        if (y < 0, YP2) {
-          r = 4
-        } else {
-          r = 20
-        }
+        r = 20
       }
     }
-    else {
-      if (x < 0, XP2) {
-        if (y > 0, YP3) {
-          r = 2
-        } else {
-          if (y < 0, YP4) {
-            r = 3
-          } else {
-            r = 10
-          }
-        }
+  }
+  else {
+    if (x < 0, XP2) {
+      if (y > 0, YP3) {
+        r = 2
       } else {
-        if (y == 0, O) {
-          r = 0
+        if (y < 0, YP4) {
+          r = 3
         } else {
           r = 10
-        }       
+        }
       }
+    } else {
+      if (y == 0, O) {
+        r = 0
+      } else {
+        r = 10
+      }       
     }
   }
 }
@@ -85,4 +83,3 @@ plot:
   XP_end:
 leave
 ret
-

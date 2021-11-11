@@ -7,6 +7,7 @@ import Kroha.Syntax (Declaration(..), Program (Program))
 import Text.Megaparsec
 import Data.Bifunctor (first)
 import Kroha.Parser.Statements (body, statement)
+import Control.Monad (void)
 
 globalVariable w f = f <$> (w *> name) <*> typeSpecification <*> (symbol "=" *> literal)
 
@@ -32,7 +33,9 @@ globals = recover (choice (fmap krP [constant, variable, manualDeclarations, fra
           skip = do someTill (satisfy (const True)) (const' <|> var' <|> manual' <|> frame') 
                     return (ManualFrame "" "'")
 
-program = krP $ Program <$> (program' *> braces (many globals))
+program = krP $ Program <$> prog (many globals) <* endOfFile
+    where prog p = (program' *> (braces p <|> symbol ";" *> p)) <|> p
+          endOfFile = eof <|> void (symbol "=======" *> lexeme (some (noneOf "=") <* symbol "=======")) <?> "end of file"
 
 parseProgram :: String -> String -> Either String (Program (SourcePos, SourcePos))
 parseProgram name = first errorBundlePretty . runParser program name

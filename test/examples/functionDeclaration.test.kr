@@ -1,11 +1,9 @@
-program {
-  frame start {
-    !nop
-  }
+frame start {
+  !nop
+}
 
-  manual frame mf {
-    add ax, dx
-  }
+manual frame mf {
+  add ax, dx
 }
 
 ======= nasm =======
@@ -18,5 +16,3 @@ ret
 section .text
 mf:
   add ax, dx
-  
-
