@@ -8,7 +8,7 @@ import Data.Foldable (toList)
 import Control.Monad (void)
 import Control.Monad.Zip (mzipWith)
 
-import Kroha.Syntax
+import Kroha.Syntax.Syntax
 import Kroha.Scope
 import Kroha.Stack
 import Kroha.Types

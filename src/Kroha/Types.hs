@@ -8,7 +8,7 @@ import Control.Monad (join)
 import Data.List.Extra (elemIndex)
 import Data.Either.Extra (maybeToEither)
 
-import Kroha.Syntax
+import Kroha.Syntax.Syntax
 import Kroha.Scope
 import Kroha.Errors
 

@@ -35,7 +35,10 @@ executable Kroha
       Kroha.Parser.Statements
       Kroha.Scope
       Kroha.Stack
-      Kroha.Syntax
+      Kroha.Syntax.Declarations
+      Kroha.Syntax.Primitive
+      Kroha.Syntax.Statements
+      Kroha.Syntax.Syntax
       Kroha.Types
       Paths_Kroha
   hs-source-dirs:
@@ -65,7 +68,10 @@ test-suite Kroha-tests
       Kroha.Parser.Statements
       Kroha.Scope
       Kroha.Stack
-      Kroha.Syntax
+      Kroha.Syntax.Declarations
+      Kroha.Syntax.Primitive
+      Kroha.Syntax.Statements
+      Kroha.Syntax.Syntax
       Kroha.Types
       Main
       Paths_Kroha

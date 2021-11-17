@@ -3,7 +3,7 @@
 module Kroha.Parser.Declarations where
 
 import Kroha.Parser.Lexer
-import Kroha.Syntax (Declaration(..), Program (Program))
+import Kroha.Syntax.Declarations (Declaration(..), Program (Program))
 import Text.Megaparsec
 import Data.Bifunctor (first)
 import Kroha.Parser.Statements (body, statement)

@@ -1,6 +1,6 @@
 module Kroha.Errors where
 
-import Kroha.Syntax
+import Kroha.Syntax.Syntax
 import Data.Bifunctor (bimap, first)
 import Data.Either (partitionEithers)
 import Data.Foldable (toList)

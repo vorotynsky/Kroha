@@ -2,7 +2,7 @@
 
 module Kroha.Parser.Statements where
 
-import Kroha.Syntax
+import Kroha.Syntax.Syntax
 import Kroha.Parser.Lexer
 import Text.Megaparsec
 import Data.Tuple.Extra (curry3)

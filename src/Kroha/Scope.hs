@@ -8,7 +8,7 @@ import           Data.Foldable     (find)
 import           Data.Maybe        (fromJust, mapMaybe)
 import           Data.Tree         (Tree (..))
 
-import           Kroha.Syntax
+import           Kroha.Syntax.Syntax
 import           Kroha.Errors
 
 

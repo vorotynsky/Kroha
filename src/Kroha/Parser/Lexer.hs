@@ -2,12 +2,13 @@
 
 module Kroha.Parser.Lexer where
 
+import           Control.Monad              (void)
+import           Data.Void                  (Void)
+import           Text.Megaparsec
+import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-import Text.Megaparsec.Char
-import Text.Megaparsec
-import Data.Void (Void)
-import Kroha.Syntax
-import Control.Monad (void)
+
+import           Kroha.Syntax.Primitive
 
 
 type Parser = Parsec Void String

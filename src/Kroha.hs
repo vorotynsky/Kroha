@@ -11,7 +11,7 @@ import           Kroha.Instructions        (instructions)
 import           Kroha.Parser.Declarations (parseProgram)
 import           Kroha.Scope               (linkProgram)
 import           Kroha.Stack               (stack)
-import           Kroha.Syntax              (NodeId, Program, genId, pzip, pzip3)
+import           Kroha.Syntax.Declarations (NodeId, Program, genId, pzip, pzip3)
 import           Kroha.Types               (resolve, typeCastsTree)
 
 
@@ -32,5 +32,3 @@ kroha name src =
            Right parsed -> first (showErrors (`Data.HashMap.lookup` rangeTable)) $ compile prog
               where prog = genId parsed
                     rangeTable = fromList $ toList $ pzip prog parsed
-
-
