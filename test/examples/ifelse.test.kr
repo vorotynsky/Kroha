@@ -1,29 +1,25 @@
-program {
-  frame ifelse_eq {
-    reg x : ax
-    
-    if (x == 5, A) {
-      !dec ax
-    }
-    else {
-      !inc ax
-    }
-
-    !nop
+frame ifelse_eq {
+  reg x : ax
+  
+  if (x == 5, A) {
+    !dec ax
+  }
+  else {
+    !inc ax
   }
 
-  frame ifelse_comp {
-    reg x : ax
+  !nop
+}
 
-    if (x < 5, B) {
-      !dec ax
-    }
-    else {
-      !inc ax
-    }
+frame ifelse_comp {
+  reg x : ax
 
-    !nop
-  }
+  if (x < 5, B)
+    !dec ax
+  else
+    !inc ax
+
+  !nop
 }
 
 ======= nasm =======
@@ -44,12 +40,11 @@ section .text
 ifelse_comp:
   cmp ax, 5
   jl B_begin
-      inc ax
+    inc ax
   jmp B_end
   B_begin:
-      dec ax
+    dec ax
   B_end:
   nop
 leave
 ret
-

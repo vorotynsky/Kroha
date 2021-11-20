@@ -1,0 +1,35 @@
+program {
+  frame sign {
+    reg x : bx
+
+    if (x > 0, XGTZ) {
+      x = 2
+    } 
+    else if (x == 0, XEZ) {
+      x = 1
+    }
+    else {
+      x = 0
+    }
+    !dec bx
+  }
+}
+======= nasm =======
+section .text
+sign:
+  cmp bx, 0
+  jg XGTZ_begin
+    cmp bx, 0
+    je XEZ_begin
+        mov bx, 0
+    jmp XEZ_end
+    XEZ_begin:
+        mov bx, 1
+    XEZ_end:
+  jmp XGTZ_end
+  XGTZ_begin:
+      mov bx, 2
+  XGTZ_end:
+  dec bx
+leave
+ret

@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           Kroha
-version:        1.2.2.0
+version:        1.3.1.0
 description:    Please see the README on GitHub at <https://github.com/vorotynsky/Kroha#readme>
 homepage:       https://github.com/vorotynsky/Kroha#readme
 bug-reports:    https://github.com/vorotynsky/Kroha/issues
@@ -26,25 +26,31 @@ executable Kroha
   main-is: Main.hs
   other-modules:
       Kroha
-      Kroha.Ast
       Kroha.Backends.Common
       Kroha.Backends.Nasm
       Kroha.Errors
       Kroha.Instructions
-      Kroha.Parser
+      Kroha.Parser.Declarations
+      Kroha.Parser.Lexer
+      Kroha.Parser.Statements
       Kroha.Scope
       Kroha.Stack
+      Kroha.Syntax.Declarations
+      Kroha.Syntax.Primitive
+      Kroha.Syntax.Statements
+      Kroha.Syntax.Syntax
       Kroha.Types
       Paths_Kroha
   hs-source-dirs:
       src
+  ghc-options: -XTupleSections -XDeriveTraversable -XRankNTypes -XImplicitParams -XTypeFamilies
   build-depends:
       base >=4.7 && <5
     , comonad >=5 && <5.1
     , containers ==0.6.*
     , extra >=1.0 && <1.8
     , hashmap >=1.0.0 && <1.4
-    , parsec >=3.1.0 && <=3.1.14.0
+    , megaparsec >=8.0.0 && <=10.0.0
   default-language: Haskell2010
 
 test-suite Kroha-tests
@@ -53,20 +59,26 @@ test-suite Kroha-tests
   other-modules:
       Case
       Kroha
-      Kroha.Ast
       Kroha.Backends.Common
       Kroha.Backends.Nasm
       Kroha.Errors
       Kroha.Instructions
-      Kroha.Parser
+      Kroha.Parser.Declarations
+      Kroha.Parser.Lexer
+      Kroha.Parser.Statements
       Kroha.Scope
       Kroha.Stack
+      Kroha.Syntax.Declarations
+      Kroha.Syntax.Primitive
+      Kroha.Syntax.Statements
+      Kroha.Syntax.Syntax
       Kroha.Types
       Main
       Paths_Kroha
   hs-source-dirs:
       test
       src
+  ghc-options: -XTupleSections -XDeriveTraversable -XRankNTypes -XImplicitParams -XTypeFamilies
   build-depends:
       Diff >=0.2 && <0.5
     , HUnit ==1.6.*
@@ -75,5 +87,5 @@ test-suite Kroha-tests
     , containers ==0.6.*
     , extra >=1.0 && <1.8
     , hashmap >=1.0.0 && <1.4
-    , parsec >=3.1.0 && <=3.1.14.0
+    , megaparsec >=8.0.0 && <=10.0.0
   default-language: Haskell2010
