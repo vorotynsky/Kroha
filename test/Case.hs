@@ -10,6 +10,7 @@ import Data.Maybe (isJust, fromJust)
 import Control.Monad (join)
 import Data.List.Extra (trim)
 import Data.Tuple.Extra (both)
+import Kroha.Backends.Registers ( readRegFile )
 
 type TestName = String
 
@@ -51,9 +52,10 @@ splitBy label test = case splitLines ("======= " ++ label ++ " =======") test of
 
 testCase :: TestName -> Test
 testCase name = TestCase $ do
+    regfile <- readRegFile
     text <- readFile $ toFile ".test.kr" name
     let (program, expected) = both trim $ extract text
-    let actual = trim . fromEither $ kroha name program
+    let actual = trim . fromEither $ kroha regfile name program
     assertProgram name expected actual
     where extract text = fromJust . join . find isJust . fmap (`splitBy` text) $ ["nasm", "errors"]
 

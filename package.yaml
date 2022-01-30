@@ -33,6 +33,8 @@ dependencies:
 - comonad >= 5 && < 5.1
 - hashmap >= 1.0.0 && < 1.4
 
+data-files: "lib/regfile"
+
 executables:
   Kroha:
     source-dirs:      src

@@ -1,4 +1,4 @@
-module Kroha.Backends.Nasm (nasm) where
+module Kroha.Backends.Nasm (genNasm) where
 
 import Data.Graph (buildG)
 import Data.List (intercalate)
@@ -7,6 +7,7 @@ import Data.Maybe (fromJust)
 
 import Kroha.Syntax.Syntax
 import Kroha.Backends.Common
+import Kroha.Backends.Registers
 import Kroha.Types
 import Kroha.Instructions (Instruction(..), LabelTarget(..), Target(..), Section)
 import Kroha.Errors
@@ -68,19 +69,29 @@ litType :: Literal -> Result TypeId
 litType l@(IntegerLiteral x) | x >= 0   && x < 65536 = Right 2
                              | otherwise             = Left (BackendError (show l ++ " is not in [0; 65536)"))
 
-nasmTypes = TypeConfig
-    { types = (fmap . first) TypeName [("int8", 8), ("int16", 16), ("+literal+", 16)]
+genRegisters :: RegFile -> [(RegisterName, TypeId)]
+genRegisters rf = filter (\(_, x) -> x > 0) . fmap (fmap (size2type . rangeSize)) . concatMap layout $ rf
+    where rangeSize (Range {begin=b, end=e}) = e - b + 1
+          size2type  8 =  0
+          size2type 16 =  1
+          size2type  _ = -1 
+
+nasmTypes = (fmap . first) TypeName [("int8", 8), ("int16", 16), ("+literal+", 16)]
+
+genNasmTypes regfile = TypeConfig
+    { types = nasmTypes
     , pointerType = 1
-    , registers = zip ((\x -> fmap ((:) x . pure) "lhx") =<< "abcd") (cycle [0, 0, 1])
+    , registers = genRegisters regfile
     , typeCasts = buildG (0, 3) [(0, 2), (1, 2)]
     , literalType = litType }
 
-size2type size = fromJust . lookup size . fmap (\(a, b) -> (b, a)) $ types nasmTypes
+size2type size = fromJust . lookup size . fmap (\(a, b) -> (b, a)) $ nasmTypes
 
-nasm = Backend
+genNasm :: RegFile -> Backend
+genNasm regfile = Backend
     { instruction = nasm16I
     , bodyWrap    = id
     , indent      = "  "
     , section     = nasmSection
     , declaration = nasmDeclaration
-    , typeConfig  = nasmTypes }
+    , typeConfig  = genNasmTypes regfile }

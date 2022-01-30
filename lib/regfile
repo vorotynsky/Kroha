@@ -1,0 +1,23 @@
+register A for return {
+     ax: 0-15
+     ah: 8-15
+     al: 0-7
+}
+
+register B {
+     bx: 0-15
+     bh: 8-15
+     bl: 0-7
+}
+
+register C {
+     cx: 0-15
+     ch: 8-15
+     cl: 0-7
+}
+
+register D {
+     dx: 0-15
+     dh: 8-15
+     dl: 0-7
+}
