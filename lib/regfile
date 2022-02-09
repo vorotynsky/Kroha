@@ -1,23 +1,115 @@
 register A for return {
+    rax: 0-63
+    eax: 0-31
      ax: 0-15
      ah: 8-15
      al: 0-7
 }
 
 register B {
+    rbx: 0-63
+    ebx: 0-31
      bx: 0-15
      bh: 8-15
      bl: 0-7
 }
 
-register C {
+register C for argument 4 {
+    rcx: 0-63
+    ecx: 0-31
      cx: 0-15
      ch: 8-15
      cl: 0-7
 }
 
-register D {
+register D for argument 3 {
+    rdx: 0-63
+    edx: 0-31
      dx: 0-15
      dh: 8-15
      dl: 0-7
+}
+
+register SI for argument 2 {
+    rsi: 0-63
+    esi: 0-31
+     si: 0-15
+     sil: 0-7
+}
+
+register DI for argument 1 {
+    rdi: 0-63
+    edi: 0-31
+     di: 0-15
+     dil: 0-7
+}
+
+register BP for stack base {
+    rbp: 0-63
+    ebp: 0-31
+     bp: 0-15
+     bpl: 0-7
+}
+
+register SP for stack pointer {
+    rsp: 0-63
+    esp: 0-31
+     sp: 0-15
+     spl: 0-7
+}
+
+register R8 for argument 5 {
+    r8 : 0-63
+    r8d: 0-31
+    r8w: 0-15
+    r8b: 0-7
+}
+
+register R9 for argument 6 {
+    r9 : 0-63
+    r9d: 0-31
+    r9w: 0-15
+    r9b: 0-7
+}
+
+register R10 {
+    r10 : 0-63
+    r10d: 0-31
+    r10w: 0-15
+    r10b: 0-7
+}
+
+register R11 {
+    r12 : 0-63
+    r12d: 0-31
+    r12w: 0-15
+    r12b: 0-7
+}
+
+register R12 {
+    r12 : 0-63
+    r12d: 0-31
+    r12w: 0-15
+    r12b: 0-7
+}
+
+register R13 {
+    r13 : 0-63
+    r13d: 0-31
+    r13w: 0-15
+    r13b: 0-7
+}
+
+register R14 {
+    r14 : 0-63
+    r14d: 0-31
+    r14w: 0-15
+    r14b: 0-7
+}
+
+register R15 {
+    r15 : 0-63
+    r15d: 0-31
+    r15w: 0-15
+    r15b: 0-7
 }
