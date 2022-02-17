@@ -43,7 +43,7 @@ type StackOffsetTree = Program (NodeId, StackRange)
 link2target :: StackOffsetTree -> ScopeLink -> Target
 link2target s (ElementLink (VariableDeclaration (StackVariable _ _) nid)) = StackTarget . fromJust . lookup nid $ toList s
 link2target _ (ElementLink (VariableDeclaration (RegisterVariable _ reg) _)) = RegisterTarget reg
-link2target _ (DeclarationLink declaration) = let (VariableScope name) = dscope declaration in VariableTarget name (declType declaration)
+link2target _ (DeclarationLink declaration) = let [VariableScope name] = dscope declaration in VariableTarget name (declType declaration)
 link2target _ l = error ("[Exception]: Unexpected link for building target. Problem link: " ++ show l)
 
 target :: StackOffsetTree -> Scope -> RValue -> Target
@@ -76,11 +76,12 @@ instruction _   (Inline asm _)            = [ Assembly asm ]
 
 
 declSection :: Declaration d -> Section
-declSection Frame { }            = "text"
-declSection GlobalVariable { }   = "data"
-declSection ConstantVariable { } = "rodata"
-declSection ManualFrame { }      = "text"
-declSection ManualVariable { }   = "data"
+declSection Frame { }               = "text"
+declSection GlobalVariable { }      = "data"
+declSection ConstantVariable { }    = "rodata"
+declSection ManualFrame { }         = "text"
+declSection ManualVariable { }      = "data"
+declSection RegisterDeclaration { } = ""
 
 
 buildDeclaration :: StackOffsetTree -> Declaration Scope -> (Section, Declaration (), Tree [Instruction])

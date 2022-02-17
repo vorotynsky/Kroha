@@ -36,14 +36,15 @@ scope (Call label args _)                               = ([]                   
 scope (Assignment lval rval _)                          = ([]                    , requestVars [AsRValue lval, rval])
 scope (Inline _ _)                                      = ([]                    , [])
 
-dscope :: Declaration d -> PushToScope
-dscope (Frame label _ _)             = LabelScope    label
-dscope (GlobalVariable name _ _ _)   = VariableScope name
-dscope (ConstantVariable name _ _ _) = VariableScope name
-dscope (ManualFrame label _ _)       = LabelScope    label
-dscope (ManualVariable name _ _ _)   = VariableScope name
+dscope :: Declaration d -> [PushToScope]
+dscope (Frame label _ _)             = pure $ LabelScope    label
+dscope (GlobalVariable name _ _ _)   = pure $ VariableScope name
+dscope (ConstantVariable name _ _ _) = pure $ VariableScope name
+dscope (ManualFrame label _ _)       = pure $ LabelScope    label
+dscope (ManualVariable name _ _ _)   = pure $ VariableScope name
+dscope (RegisterDeclaration _ _)     = []
 
-dscope' d = ([dscope d], [] :: [RequestFromScope])
+dscope' d = (dscope d, [] :: [RequestFromScope])
 
 type Scope = [(PushToScope, ScopeLink)]
 
@@ -78,7 +79,7 @@ linkScope = sequenceE id . fmap (\(i, d) -> sequenceE (fmap (scopeError i)) $ re
           scopeError i (LabelScope label)  = LabelNotFound label  i
 
 declarationScope :: Program NodeId -> Scope
-declarationScope p@(Program declarations _) = fmap (\el -> (dscope el, DeclarationLink el)) declarations
+declarationScope p@(Program declarations _) = concatMap (\el -> fmap (, DeclarationLink el) (dscope el)) declarations
 
 
 linkProgram' :: Program NodeId -> Result (Tree Scope)

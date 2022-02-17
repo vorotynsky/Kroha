@@ -12,28 +12,10 @@ import Data.Functor (($>))
 import Data.Bifunctor (first)
 import System.Exit (die)
 
+import Kroha.Syntax.Syntax (Register(..), RegPurpose(..), Range(..))
 import Kroha.Parser.Lexer
 
 import Paths_Kroha
-
-data Range = Range
-    { begin :: Int
-    , end   :: Int 
-    } deriving (Show, Eq)
-
-data RegPurpose 
-    = General
-    | Argument Int
-    | ReturnValue
-    | StackBase
-    | StackPointer
-    deriving (Show, Eq)
-
-data Register = Register
-    { regName :: String
-    , regPurpose :: RegPurpose
-    , layout :: [(String, Range)]
-    } deriving (Show, Eq)
 
 type RegFile = [Register]
 

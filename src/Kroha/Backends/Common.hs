@@ -8,6 +8,7 @@ import Control.Monad (void)
 import Data.Tree (Tree(..))
 import Data.Char (isSpace)
 import Data.Semigroup (Min(Min, getMin))
+import Kroha.Scope (declarationScope)
 
 
 data Backend = Backend
@@ -31,13 +32,14 @@ unindentManual code = fmap (drop minIndent) lined
           minIndent = getMin . foldMap (Min . length . takeWhile isSpace) . filterEmpty $ lined
 
 backendDeclaration :: Backend -> Declaration () -> Tree [Instruction] -> String
-backendDeclaration b decl@(Frame {})              ti = declaration b decl (makeFix b ti)
+backendDeclaration b decl@(Frame {})              ti  = declaration b decl (makeFix b ti)
 backendDeclaration b decl@(GlobalVariable   {})    _  = declaration b decl []
 backendDeclaration b decl@(ConstantVariable {})    _  = declaration b decl []
 backendDeclaration b decl@(ManualFrame _ c _)      _  = declaration b decl (unindentManual c)
 backendDeclaration b decl@(ManualVariable _ _ c _) _  = declaration b decl (unindentManual c)
+backendDeclaration _      (RegisterDeclaration {}) _  = ""
 
 runBackend :: Backend -> [(Section, Declaration d, Tree [Instruction])] -> String
 runBackend backend = (>>= mapper)
-    where mapper (s, d, i) = section backend s (backendDeclaration backend (void d) i)
+    where mapper (s, d, i) = if null s then "" else section backend s (backendDeclaration backend (void d) i)
 

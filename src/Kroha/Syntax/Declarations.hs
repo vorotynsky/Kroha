@@ -10,12 +10,29 @@ import Control.Monad.Zip (mzipWith)
 import Kroha.Syntax.Primitive
 import Kroha.Syntax.Statements
 
+data Range = Range
+    { begin :: Int
+    , end   :: Int 
+    } deriving (Show, Eq)
+
+data RegPurpose 
+    = General | Argument Int | ReturnValue | StackBase | StackPointer
+    deriving (Show, Eq)
+
+data Register = Register
+    { regName :: String
+    , regPurpose :: RegPurpose
+    , layout :: [(String, Range)]
+    } deriving (Show, Eq)
+
+
 data Declaration d
     = Frame Label (FrameElement d) d
     | GlobalVariable VariableName TypeName Literal d
     | ConstantVariable VariableName TypeName Literal d
     | ManualFrame Label InlinedCode d
     | ManualVariable VariableName TypeName InlinedCode d
+    | RegisterDeclaration Register d
     deriving (Show, Eq, Functor, Foldable, Traversable)
 
 data Program d = Program [Declaration d] d
@@ -27,6 +44,7 @@ getDeclData (GlobalVariable _ _ _ d)   = d
 getDeclData (ConstantVariable _ _ _ d) = d
 getDeclData (ManualFrame _ _ d)        = d
 getDeclData (ManualVariable _ _ _ d)   = d
+getDeclData (RegisterDeclaration _ d)  = d
 
 selectorProg :: (Declaration d -> a) -> (FrameElement d -> a) -> Program d -> Forest a
 selectorProg df sf (Program declarations _) = fmap mapper declarations
@@ -50,6 +68,7 @@ dzip (GlobalVariable va ta la _a)   (GlobalVariable vb tb lb _b)   | (va, ta, la
 dzip (ConstantVariable va ta la _a) (ConstantVariable vb tb lb _b) | (va, ta, la) == (vb, tb, lb) = ConstantVariable va ta la (_a, _b)
 dzip (ManualFrame la ca _a)         (ManualFrame lb cb _b)         | (la, ca)     == (lb, cb)     = ManualFrame la ca         (_a, _b)
 dzip (ManualVariable va ta ca _a)   (ManualVariable vb tb cb _b)   | (va, ta, ca) == (vb, tb, cb) = ManualVariable   va ta ca (_a, _b)
+dzip (RegisterDeclaration da _a)    (RegisterDeclaration db _b)    | da           == db           = RegisterDeclaration da    (_a, _b)
 dzip _ _ = error "can't zip different declarations"
 
 pzip :: Program a -> Program b -> Program (a, b)

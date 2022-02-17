@@ -32,7 +32,7 @@ ifStatement pStatement = krP $
 
 loop ps = krP $ Loop <$> (loop' *> parensOpt name) <*> body' ps
 
-statement = recover (choice ( fmap (<* end)
+statement = recover (choice ( fmap (<* Kroha.Parser.Lexer.end)
                      [ inline, call, Kroha.Parser.Statements.break,
                        register, variable, assignment ] 
                      ++
