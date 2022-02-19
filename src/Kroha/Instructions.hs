@@ -2,16 +2,16 @@
 
 module Kroha.Instructions where
 
-import Data.Tree
-import Data.Maybe (fromJust)
-import Data.Foldable (toList)
-import Control.Monad (void)
-import Control.Monad.Zip (mzipWith)
+import           Control.Monad       (void)
+import           Control.Monad.Zip   (mzipWith)
+import           Data.Foldable       (toList)
+import           Data.Maybe          (fromJust)
+import           Data.Tree
 
-import Kroha.Syntax.Syntax
-import Kroha.Scope
-import Kroha.Stack
-import Kroha.Types
+import           Kroha.Scope
+import           Kroha.Stack
+import           Kroha.Syntax.Syntax
+import           Kroha.Types
 
 
 type Section = String

@@ -2,10 +2,10 @@
 
 module Kroha.Syntax.Statements where
 
-import Data.Tree (Tree, unfoldTree)
-import Control.Comonad
+import           Control.Comonad
+import           Data.Tree              (Tree, unfoldTree)
 
-import Kroha.Syntax.Primitive
+import           Kroha.Syntax.Primitive
 
 data FrameElement d
     = Instructions [FrameElement d] d

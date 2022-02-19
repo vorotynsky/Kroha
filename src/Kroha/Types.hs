@@ -2,15 +2,15 @@
 
 module Kroha.Types where
 
-import Data.Graph (Graph, path)
-import Data.Bifunctor (bimap)
-import Control.Monad (join)
-import Data.List.Extra (elemIndex)
-import Data.Either.Extra (maybeToEither)
+import           Control.Monad       (join)
+import           Data.Bifunctor      (bimap)
+import           Data.Either.Extra   (maybeToEither)
+import           Data.Graph          (Graph, path)
+import           Data.List.Extra     (elemIndex)
 
-import Kroha.Syntax.Syntax
-import Kroha.Scope
-import Kroha.Errors
+import           Kroha.Errors
+import           Kroha.Scope
+import           Kroha.Syntax.Syntax
 
 type TypeId = Int
 
@@ -22,14 +22,14 @@ data TypeConfig = TypeConfig
     , literalType :: Literal -> Result TypeId }
 
 types' _ tc (PointerType _) = Right (pointerType tc)
-types' nid tc t               = maybeToEither (UnknownType t nid) (t `elemIndex` (fst . unzip . types $ tc))
+types' nid tc t             = maybeToEither (UnknownType t nid) (t `elemIndex` (fst . unzip . types $ tc))
 
 declType :: Declaration d -> TypeName
 declType (GlobalVariable   _ t _ _) = t
 declType (ConstantVariable _ t _ _) = t
 declType (ManualVariable   _ t _ _) = t
 declType (Frame              l _ _) = error $ "[Exception]: Unexpected declaration to extract type. \tError location: Frame       (" ++ l ++ ")"
-declType (ManualFrame        l _ _) = error $ "[Exception]: Unexpected declaration to extract type. \tError location: ManualFrame (" ++ l ++ ")" 
+declType (ManualFrame        l _ _) = error $ "[Exception]: Unexpected declaration to extract type. \tError location: ManualFrame (" ++ l ++ ")"
 
 
 getType :: (?tc :: TypeConfig) => ScopeLink -> Result TypeId

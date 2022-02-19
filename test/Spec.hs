@@ -1,6 +1,6 @@
-import Case        ( tests )
-import Test.HUnit  ( runTestTT, errors, failures )
-import System.Exit ( exitFailure, exitSuccess )
+import           Case        (tests)
+import           System.Exit (exitFailure, exitSuccess)
+import           Test.HUnit  (errors, failures, runTestTT)
 
 cases =
     [ "examples/frameVariables"
@@ -13,7 +13,7 @@ cases =
     , "examples/loops"
     , "examples/semicolons"
     , "examples/elseif"
-    
+
     , "errors/scopeErrors"
     , "errors/typeErrors" ]
 

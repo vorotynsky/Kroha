@@ -2,14 +2,14 @@
 
 module Kroha.Scope where
 
-import           Control.Comonad   (extract)
-import           Control.Monad.Zip (munzip, mzip)
-import           Data.Foldable     (find)
-import           Data.Maybe        (fromJust, mapMaybe)
-import           Data.Tree         (Tree (..))
+import           Control.Comonad     (extract)
+import           Control.Monad.Zip   (munzip, mzip)
+import           Data.Foldable       (find)
+import           Data.Maybe          (fromJust, mapMaybe)
+import           Data.Tree           (Tree (..))
 
-import           Kroha.Syntax.Syntax
 import           Kroha.Errors
+import           Kroha.Syntax.Syntax
 
 
 data ScopeEffect

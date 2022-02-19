@@ -2,13 +2,13 @@
 
 module Kroha.Syntax.Declarations where
 
-import Data.Graph (Forest, Tree(..))
-import Data.List (mapAccumR)
-import Control.Comonad (($>), Comonad (extract))
-import Control.Monad.Zip (mzipWith)
+import           Control.Comonad         (Comonad (extract), ($>))
+import           Control.Monad.Zip       (mzipWith)
+import           Data.Graph              (Forest, Tree (..))
+import           Data.List               (mapAccumR)
 
-import Kroha.Syntax.Primitive
-import Kroha.Syntax.Statements
+import           Kroha.Syntax.Primitive
+import           Kroha.Syntax.Statements
 
 data Declaration d
     = Frame Label (FrameElement d) d
@@ -30,8 +30,8 @@ getDeclData (ManualVariable _ _ _ d)   = d
 
 selectorProg :: (Declaration d -> a) -> (FrameElement d -> a) -> Program d -> Forest a
 selectorProg df sf (Program declarations _) = fmap mapper declarations
-    where mapper d@(Frame _ frame _)        = Node (df d) [selector sf frame]
-          mapper declaration                = Node (df declaration) []
+    where mapper d@(Frame _ frame _) = Node (df d) [selector sf frame]
+          mapper declaration         = Node (df declaration) []
 
 type NodeId = Int
 
@@ -39,7 +39,7 @@ genId :: Program d -> Program NodeId
 genId (Program decls _) = Program (snd $ mapAccumR declId 1 decls) 0
     where genId'' = mapAccumR (\ac b -> (ac + 1, ac))
           declId begin (Frame l fe _) = let (acc, fe') = genId'' (begin + 1) fe in (acc, Frame l fe' begin)
-          declId begin d  = (begin + 1, d $> begin)
+          declId begin d              = (begin + 1, d $> begin)
 
 progId :: Program d -> Tree NodeId
 progId program = Node 0 $ selectorProg getDeclData extract (genId program)

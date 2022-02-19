@@ -1,15 +1,15 @@
 module Case where
 
-import Data.Either.Extra (fromEither)
-import Data.Algorithm.Diff (getGroupedDiff, Diff, PolyDiff(..))
-import Test.HUnit
-import Kroha (kroha)
-import Data.List (dropWhileEnd, find)
-import Data.Char (isSpace)
-import Data.Maybe (isJust, fromJust)
-import Control.Monad (join)
-import Data.List.Extra (trim)
-import Data.Tuple.Extra (both)
+import           Control.Monad       (join)
+import           Data.Algorithm.Diff (Diff, PolyDiff (..), getGroupedDiff)
+import           Data.Char           (isSpace)
+import           Data.Either.Extra   (fromEither)
+import           Data.List           (dropWhileEnd, find)
+import           Data.List.Extra     (trim)
+import           Data.Maybe          (fromJust, isJust)
+import           Data.Tuple.Extra    (both)
+import           Kroha               (kroha)
+import           Test.HUnit
 
 type TestName = String
 

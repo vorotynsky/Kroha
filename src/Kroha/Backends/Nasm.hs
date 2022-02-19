@@ -1,15 +1,15 @@
 module Kroha.Backends.Nasm (nasm) where
 
-import Data.Graph (buildG)
-import Data.List (intercalate)
-import Data.Bifunctor (first)
-import Data.Maybe (fromJust)
+import           Data.Bifunctor        (first)
+import           Data.Graph            (buildG)
+import           Data.List             (intercalate)
+import           Data.Maybe            (fromJust)
 
-import Kroha.Syntax.Syntax
-import Kroha.Backends.Common
-import Kroha.Types
-import Kroha.Instructions (Instruction(..), LabelTarget(..), Target(..), Section)
-import Kroha.Errors
+import           Kroha.Backends.Common
+import           Kroha.Errors
+import           Kroha.Instructions    (Instruction (..), LabelTarget (..), Section, Target (..))
+import           Kroha.Syntax.Syntax
+import           Kroha.Types
 
 bytes :: Int -> Int
 bytes x = ceiling (toEnum x / (8 :: Double))
@@ -23,7 +23,7 @@ nasmType :: TypeName -> (String, String)
 nasmType (TypeName "int8" ) = ("db", "byte")
 nasmType (TypeName "int16") = ("dw", "word")
 nasmType (PointerType    _) = ("dw", "word")
-nasmType (TypeName name   ) = error $ "[Exception]: Unexpected type `" ++ name ++ "` in backend" 
+nasmType (TypeName name   ) = error $ "[Exception]: Unexpected type `" ++ name ++ "` in backend"
 
 size2type :: Int -> TypeName
 nasmTypeG , nasmTypeL, untyped :: TypeName -> String

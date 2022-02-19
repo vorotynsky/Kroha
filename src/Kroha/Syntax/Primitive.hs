@@ -5,9 +5,9 @@ type RegisterName = String
 type InlinedCode  = String
 type Label = String
 
-data TypeName 
+data TypeName
     = TypeName String
-    | PointerType TypeName    
+    | PointerType TypeName
     deriving (Show, Eq)
 
 data Literal

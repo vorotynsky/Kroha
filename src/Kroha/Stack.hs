@@ -1,11 +1,11 @@
 module Kroha.Stack where
 
-import Control.Comonad (extract, duplicate, ($>))
-import Data.List (mapAccumL)
-import Data.Maybe (fromJust)
+import           Control.Comonad     (duplicate, extract, ($>))
+import           Data.List           (mapAccumL)
+import           Data.Maybe          (fromJust)
 
-import Kroha.Syntax.Syntax
-import Kroha.Types
+import           Kroha.Syntax.Syntax
+import           Kroha.Types
 
 type StackRange = (Int, Int) {-offset, size-}
 

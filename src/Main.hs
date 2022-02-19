@@ -4,6 +4,7 @@ import           Data.Either        (partitionEithers)
 import           Data.List          (intercalate)
 import           System.Environment (getArgs)
 import           System.Exit        (exitFailure)
+
 import           Kroha
 
 parse :: [(String, String)] -> IO String
@@ -19,4 +20,4 @@ main = do
     contents <- mapM readFile args
     parsed <- parse (zip args contents)
     putStrLn "; build with Kroha\n; see: https://github.com/vorotynsky/Kroha \n"
-    putStrLn parsed          
+    putStrLn parsed

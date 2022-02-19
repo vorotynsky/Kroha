@@ -1,12 +1,13 @@
 module Kroha.Errors where
 
-import Kroha.Syntax.Syntax
-import Data.Bifunctor (bimap, first)
-import Data.Either (partitionEithers)
-import Data.Foldable (toList)
-import Data.List.Extra
-import Text.Megaparsec (SourcePos, sourceName, sourceColumn, sourceLine)
-import Text.Megaparsec.Pos (unPos)
+import           Data.Bifunctor      (bimap, first)
+import           Data.Either         (partitionEithers)
+import           Data.Foldable       (toList)
+import           Data.List.Extra
+import           Text.Megaparsec     (SourcePos, sourceColumn, sourceLine, sourceName)
+import           Text.Megaparsec.Pos (unPos)
+
+import           Kroha.Syntax.Syntax
 
 type Result a = Either Error a
 

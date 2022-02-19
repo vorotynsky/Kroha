@@ -2,11 +2,12 @@
 
 module Kroha.Parser.Statements where
 
-import Kroha.Syntax.Syntax
-import Kroha.Parser.Lexer
-import Text.Megaparsec
-import Data.Tuple.Extra (curry3)
-import Text.Megaparsec.Char (space1)
+import           Data.Tuple.Extra     (curry3)
+import           Text.Megaparsec
+import           Text.Megaparsec.Char (space1)
+
+import           Kroha.Parser.Lexer
+import           Kroha.Syntax.Syntax
 
 break  = krP $ Break  <$> (break' *> parensOpt name)
 inline = krP (Inline <$> (symbol "!" *> many (noneOf "\n"))) <* space1
@@ -34,7 +35,7 @@ loop ps = krP $ Loop <$> (loop' *> parensOpt name) <*> body' ps
 
 statement = recover (choice ( fmap (<* end)
                      [ inline, call, Kroha.Parser.Statements.break,
-                       register, variable, assignment ] 
+                       register, variable, assignment ]
                      ++
                      [ ifStatement statement, loop statement ]
                    )

@@ -2,12 +2,12 @@
 
 module Kroha.Parser.Declarations where
 
-import Kroha.Parser.Lexer
-import Kroha.Syntax.Declarations (Declaration(..), Program (Program))
-import Text.Megaparsec
-import Data.Bifunctor (first)
-import Kroha.Parser.Statements (body, statement)
-import Control.Monad (void)
+import           Control.Monad             (void)
+import           Data.Bifunctor            (first)
+import           Kroha.Parser.Lexer
+import           Kroha.Parser.Statements   (body, statement)
+import           Kroha.Syntax.Declarations (Declaration (..), Program (Program))
+import           Text.Megaparsec
 
 globalVariable w f = f <$> (w *> name) <*> typeSpecification <*> (symbol "=" *> literal)
 
@@ -20,17 +20,17 @@ manuals ps = do
              code <- braces (many (noneOf "}"))
              return (decl code)
 
-manualDeclarations = manuals 
+manualDeclarations = manuals
     [ ManualFrame    <$> (frame' *> name)
     , ManualVariable <$> (var'   *> name) <*> typeSpecification]
 
-frame = Frame <$> (frame' *> name) <*> body statement 
+frame = Frame <$> (frame' *> name) <*> body statement
 
 globals = recover (choice (fmap krP [constant, variable, manualDeclarations, frame]) <?> "declaration")
     where recover = withRecovery $ \e -> do
                         registerParseError e
                         krP skip
-          skip = do someTill (satisfy (const True)) (const' <|> var' <|> manual' <|> frame') 
+          skip = do someTill (satisfy (const True)) (const' <|> var' <|> manual' <|> frame')
                     return (ManualFrame "" "'")
 
 program = krP $ Program <$> prog (many globals) <* endOfFile

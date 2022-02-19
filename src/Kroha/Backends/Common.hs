@@ -1,21 +1,21 @@
 module Kroha.Backends.Common (Backend(..), runBackend) where
 
-import Kroha.Syntax.Declarations (Declaration(..))
-import Kroha.Types (TypeConfig)
-import Kroha.Instructions (Instruction(Body), Section)
+import           Kroha.Instructions        (Instruction (Body), Section)
+import           Kroha.Syntax.Declarations (Declaration (..))
+import           Kroha.Types               (TypeConfig)
 
-import Control.Monad (void)
-import Data.Tree (Tree(..))
-import Data.Char (isSpace)
-import Data.Semigroup (Min(Min, getMin))
+import           Control.Monad             (void)
+import           Data.Char                 (isSpace)
+import           Data.Semigroup            (Min (Min, getMin))
+import           Data.Tree                 (Tree (..))
 
 
 data Backend = Backend
-    { typeConfig :: TypeConfig
+    { typeConfig  :: TypeConfig
     , instruction :: Instruction -> [String]
-    , bodyWrap :: [String] -> [String]
-    , indent :: String
-    , section :: Section -> String -> String
+    , bodyWrap    :: [String] -> [String]
+    , indent      :: String
+    , section     :: Section -> String -> String
     , declaration :: Declaration () -> [String] -> String }
 
 
@@ -32,10 +32,10 @@ unindentManual code = fmap (drop minIndent) lined
 
 backendDeclaration :: Backend -> Declaration () -> Tree [Instruction] -> String
 backendDeclaration b decl@(Frame {})              ti = declaration b decl (makeFix b ti)
-backendDeclaration b decl@(GlobalVariable   {})    _  = declaration b decl []
-backendDeclaration b decl@(ConstantVariable {})    _  = declaration b decl []
-backendDeclaration b decl@(ManualFrame _ c _)      _  = declaration b decl (unindentManual c)
-backendDeclaration b decl@(ManualVariable _ _ c _) _  = declaration b decl (unindentManual c)
+backendDeclaration b decl@(GlobalVariable   {})    _ = declaration b decl []
+backendDeclaration b decl@(ConstantVariable {})    _ = declaration b decl []
+backendDeclaration b decl@(ManualFrame _ c _)      _ = declaration b decl (unindentManual c)
+backendDeclaration b decl@(ManualVariable _ _ c _) _ = declaration b decl (unindentManual c)
 
 runBackend :: Backend -> [(Section, Declaration d, Tree [Instruction])] -> String
 runBackend backend = (>>= mapper)
