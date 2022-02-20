@@ -37,3 +37,11 @@ data Comparator
 newtype Condition = Condition (RValue, Comparator, RValue)
     deriving (Show, Eq)
 
+data Range = Range
+    { begin :: Int
+    , end   :: Int 
+    } deriving (Show, Eq)
+
+data RegPurpose 
+    = General | Argument Int | ReturnValue | StackBase | StackPointer
+    deriving (Show, Eq)

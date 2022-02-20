@@ -3,10 +3,11 @@
 module Kroha.Parser.Declarations where
 
 import Kroha.Parser.Lexer
-import Kroha.Syntax.Declarations (Declaration(..), Program (Program))
+import Kroha.Parser.Statements (body, statement)
+import Kroha.Syntax.Declarations (Declaration(..), Program (Program), Register (Register))
+import Kroha.Syntax.Primitive (RegPurpose(General))
 import Text.Megaparsec
 import Data.Bifunctor (first)
-import Kroha.Parser.Statements (body, statement)
 import Control.Monad (void)
 
 globalVariable w f = f <$> (w *> name) <*> typeSpecification <*> (symbol "=" *> literal)
@@ -26,7 +27,19 @@ manualDeclarations = manuals
 
 frame = Frame <$> (frame' *> name) <*> body statement 
 
-globals = recover (choice (fmap krP [constant, variable, manualDeclarations, frame]) <?> "declaration")
+
+regDef = do
+    symbol "register"
+    rName <- name
+    for <- (symbol "for" *> registerPurpose) <|> pure General
+    layout <- braces (many (reg <* Kroha.Parser.Lexer.end))
+
+    return (Register rName for layout)
+    where reg = (,) <$> (name <* symbol ":") <*> range
+
+regDeclaration = fmap RegisterDeclaration regDef
+
+globals = recover (choice (fmap krP [constant, variable, manualDeclarations, frame, regDeclaration]) <?> "declaration")
     where recover = withRecovery $ \e -> do
                         registerParseError e
                         krP skip

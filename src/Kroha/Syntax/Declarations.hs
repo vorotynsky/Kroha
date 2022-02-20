@@ -10,15 +10,6 @@ import Control.Monad.Zip (mzipWith)
 import Kroha.Syntax.Primitive
 import Kroha.Syntax.Statements
 
-data Range = Range
-    { begin :: Int
-    , end   :: Int 
-    } deriving (Show, Eq)
-
-data RegPurpose 
-    = General | Argument Int | ReturnValue | StackBase | StackPointer
-    deriving (Show, Eq)
-
 data Register = Register
     { regName :: String
     , regPurpose :: RegPurpose

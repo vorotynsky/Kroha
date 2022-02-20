@@ -4,11 +4,13 @@ module Kroha.Parser.Lexer where
 
 import           Control.Monad              (void)
 import           Data.Void                  (Void)
+import           Data.Functor               (($>))
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
 import           Kroha.Syntax.Primitive
+import           Kroha.Syntax.Declarations
 
 
 type Parser = Parsec Void String
@@ -53,6 +55,12 @@ rvalue = (RLiteral <$> literal) <|> (AsRValue <$> lvalue)
 
 typeName = (PointerType <$> lexeme (char '&' *> typeName)) <|> (TypeName <$> name) <?> "type name"
 typeSpecification = symbol ":" *> typeName <?> "type specification"
+
+range = Range <$> nat <*> (symbol "-" *> nat)
+
+registerPurpose = parser General "general" <|> parser ReturnValue "return" <|> (Argument <$> (symbol "argument" *> nat))
+          <|> (symbol "stack" *> (symbol "base" $> StackBase <|> symbol "pointer" $> StackPointer))
+    where parser x s = fmap (const x) $ symbol s
 
 -- keywords --
 break'         = symbol "break"
