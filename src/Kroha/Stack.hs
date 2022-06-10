@@ -16,7 +16,7 @@ stackVar _   _                                                        = 0
 
 frame :: TypeConfig -> FrameElement d -> FrameElement (Int, StackRange)
 frame ptr = snd . mapAccumL f 0 . duplicate
-    where f acc el = let size = stackVar ptr el in (acc + size, (acc, (if size > 0 then acc + size else 0, size)))
+    where f acc el = let size = stackVar ptr el in (acc + size, (acc, (if size > 0 then acc + size else acc, size)))
 
 stackFrames :: TypeConfig -> Program d -> Program (Int, StackRange)
 stackFrames ptr (Program declarations _) = Program (fmap mapper declarations) (0, (0, 0))

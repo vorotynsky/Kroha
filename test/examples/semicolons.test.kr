@@ -17,6 +17,7 @@ program {
 ======= nasm =======
 section .text
 main:
+sub sp, 2
   mov ax, [bp - 2]
   mov word [bp - 2], ax
   L_begin:

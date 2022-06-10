@@ -36,6 +36,7 @@ data Instruction
     | Move Target Target
     | CallI LabelTarget [Target]
     | Jump LabelTarget (Maybe (Target, Comparator, Target))
+    | StackAlloc Int
     deriving (Show)
 
 type StackOffsetTree = Program (NodeId, StackRange)
@@ -83,12 +84,13 @@ declSection ManualFrame { }      = "text"
 declSection ManualVariable { }   = "data"
 
 
-buildDeclaration :: StackOffsetTree -> Declaration Scope -> (Section, Declaration (), Tree [Instruction])
-buildDeclaration sot d@(Frame _ frame _) = (declSection d, void d, instructions)
-    where instructions =  instruction sot <$> selector id frame
+buildDeclaration :: StackOffsetTree -> Declaration (StackRange, Scope) -> (Section, Declaration (), Tree [Instruction])
+buildDeclaration sot d@(Frame _ frame (sr, _)) = (declSection d, void d, stackInstructions)
+    where instructions       = instruction sot <$> selector id (fmap snd frame)
+          stackInstructions  = let (Node curr children) = instructions in Node ((StackAlloc $ fst sr) : curr) children
 buildDeclaration _ d = (declSection d, void d, Node [] [])
 
 instructions :: Program (StackRange, Scope, NodeId) -> [(Section, Declaration (), Tree [Instruction])]
 instructions p@(Program decls _) = fmap mapper decls
-    where mapper decl = buildDeclaration sot $ fmap (\(_, x, _) -> x) decl
+    where mapper decl = buildDeclaration sot $ fmap (\(s, x, _) -> (s, x)) decl
           sot = fmap (\(st, _, i) -> (i, st)) p

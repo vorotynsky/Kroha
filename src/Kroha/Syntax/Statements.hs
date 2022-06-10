@@ -4,6 +4,7 @@ module Kroha.Syntax.Statements where
 
 import           Control.Comonad
 import           Data.Tree              (Tree, unfoldTree)
+import           Data.List              (mapAccumL)
 
 import           Kroha.Syntax.Primitive
 
@@ -30,6 +31,21 @@ children (Inline _ _)              = []
 
 selector :: (FrameElement d -> a) -> FrameElement d -> Tree a
 selector s = unfoldTree (\e -> (s e, children e))
+
+mapAccumUL :: (a -> d -> (a, e)) -> a -> FrameElement d ->  (a, FrameElement e)
+mapAccumUL f acc (Instructions xs d)       = let (acc'', d') = f acc' d in (acc', Instructions xs' d')
+    where (acc', xs') = mapAccumL (mapAccumUL f) acc xs
+mapAccumUL f acc (VariableDeclaration x d) = let (acc',  d') = f acc  d in (acc', VariableDeclaration x d')
+mapAccumUL f acc (If c l b e d)            = let (acc'', d') = f acc' d in (acc', If c l b' e' d')
+    where (acc', [b', e']) = mapAccumL (mapAccumUL f) acc [b, e]
+mapAccumUL f acc (Loop l b d)              = let (acc'', d') = f acc' d in (acc', Loop l b' d')
+    where (acc', b') = mapAccumUL f acc b
+mapAccumUL f acc (Break l d)               = let (acc',  d') = f acc  d in (acc', Break l d')
+mapAccumUL f acc (Call l a d)              = let (acc',  d') = f acc  d in (acc', Call l a d')
+mapAccumUL f acc (Assignment l a d)        = let (acc',  d') = f acc  d in (acc', Assignment l a d')
+mapAccumUL f acc (Inline c d)              = let (acc',  d') = f acc  d in (acc', Inline c d')
+
+
 
 instance Comonad FrameElement where
     duplicate node@(Instructions c _)        = Instructions (map duplicate c) node

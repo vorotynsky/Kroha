@@ -51,6 +51,8 @@ nasm16I (Move l r)                   = ["mov " ++ target nasmTypeL l ++ ", " ++ 
 nasm16I (CallI l args)               = (fmap (("push " ++) . target nasmTypeL) . reverse $ args) ++ ["call " ++ label l, "add sp, " ++ show ((length args) * 2)]
 nasm16I (Jump l Nothing)             = ["jmp " ++ label l]
 nasm16I (Jump lbl (Just (l, c, r)))  = ["cmp " ++ target nasmTypeL l ++ ", " ++ target untyped r, jump c ++ " " ++ label lbl]
+nasm16I (StackAlloc 0)               = []
+nasm16I (StackAlloc s)               = ["sub sp, " ++ show (bytes s)]
 
 nasmSection :: Section -> String -> String
 nasmSection section body = header <> body <> "\n\n"

@@ -26,6 +26,7 @@ ret
 
 section .text
 stackNreg:
+sub sp, 2
   mov word [bp - 2], 5
   mov ax, [bp - 2]
   mov word [bp - 2], ax
