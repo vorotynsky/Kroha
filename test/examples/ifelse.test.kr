@@ -25,6 +25,7 @@ frame ifelse_comp {
 ======= nasm =======
 section .text
 ifelse_eq:
+enter 0, 0
   cmp ax, 5
   je A_begin
       inc ax
@@ -38,6 +39,7 @@ ret
 
 section .text
 ifelse_comp:
+enter 0, 0
   cmp ax, 5
   jl B_begin
     inc ax

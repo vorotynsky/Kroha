@@ -13,12 +13,14 @@ program {
 ======= nasm =======
 section .text
 justFunc:
+enter 0, 0
   nop
 leave
 ret
 
 section .text
 callFunction:
+enter 0, 0
   call justFunc
   add sp, 0
   call justFunc

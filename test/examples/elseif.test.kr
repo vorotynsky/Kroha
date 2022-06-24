@@ -17,6 +17,7 @@ program {
 ======= nasm =======
 section .text
 sign:
+enter 0, 0
   cmp bx, 0
   jg XGTZ_begin
     cmp bx, 0
