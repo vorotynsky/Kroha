@@ -9,6 +9,7 @@ manual frame mf {
 ======= nasm =======
 section .text
 start:
+enter 0, 0
   nop
 leave
 ret

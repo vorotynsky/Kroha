@@ -40,13 +40,13 @@ act:
 
 section .text
 main:
+enter 0, 0
   mov ax, 5
   push ax
   call act
   add sp, 2
 leave
 ret
-
 ```
 
 ### Variables
@@ -64,11 +64,11 @@ program {
 
   frame main {
     reg ra : ax
-    reg ptr : bx
+    reg rb : bl
     var sb : int16
     ra = 5
     sb = 6
-    ptr = b
+    rb = b
   }
 }
 ```
@@ -89,15 +89,16 @@ section .rodata
 d: db 1
 
 section .data
-arr: 
+arr:
   times 64 db 0
     
 
 section .text
 main:
+enter 2, 0
   mov ax, 5
-  mov [bp - 2], 6
-  mov bx, [b]
+  mov word [bp - 2], 6
+  mov bl, [b]
 leave
 ret
 ```
@@ -128,6 +129,7 @@ Compiled
 ```asm
 section .text
 main:
+enter 0, 0
   mov ax, 0
   LOOP_begin:
     cmp ax, 5

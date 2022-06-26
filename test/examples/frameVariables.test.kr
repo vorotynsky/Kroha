@@ -19,6 +19,7 @@ frame stackNreg {
 ======= nasm =======
 section .text
 register:
+enter 0, 0
   mov ax, 5
   mov bx, ax
 leave
@@ -26,6 +27,7 @@ ret
 
 section .text
 stackNreg:
+enter 2, 0
   mov word [bp - 2], 5
   mov ax, [bp - 2]
   mov word [bp - 2], ax

@@ -38,6 +38,7 @@ frame plot {
 ======= nasm =======
 section .text
 plot:
+enter 0, 0
   cmp ax, 0
   jg XP_begin
       cmp ax, 0

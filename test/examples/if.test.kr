@@ -24,6 +24,7 @@ frame if_comp {
 ======= nasm =======
 section .text
 if_eq:
+enter 0, 0
   cmp ax, 5
   je A_begin
   jmp A_end
@@ -36,6 +37,7 @@ ret
 
 section .text
 if_comp:
+enter 0, 0
   cmp ax, 5
   jg B_begin
   jmp B_end

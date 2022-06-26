@@ -29,6 +29,7 @@ frame main {
 ======= nasm =======
 section .text
 infLoop:
+enter 0, 0
   IL_begin:
       inc ax
   jmp IL_begin
@@ -42,6 +43,7 @@ ret
 
 section .text
 main:
+enter 0, 0
   JL_begin:
       inc ax
       cmp ax, 5
