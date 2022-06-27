@@ -5,6 +5,7 @@ import           Data.List          (intercalate)
 import           System.Environment (getArgs)
 import           System.Exit        (exitFailure)
 
+import           Args
 import           Kroha
 
 parse :: [(String, String)] -> IO String
@@ -16,8 +17,8 @@ parse contents = do
 
 main :: IO ()
 main = do
-    args <- getArgs
-    contents <- mapM readFile args
-    parsed <- parse (zip args contents)
+    options <- readOptions
+    contents <- mapM readFile (files options)
+    parsed <- parse (zip (files options) contents)
     putStrLn "; build with Kroha\n; see: https://github.com/vorotynsky/Kroha \n"
     putStrLn parsed

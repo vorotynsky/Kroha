@@ -25,6 +25,7 @@ source-repository head
 executable Kroha
   main-is: Main.hs
   other-modules:
+      Args
       Kroha
       Kroha.Backends.Common
       Kroha.Backends.Nasm
@@ -52,6 +53,7 @@ executable Kroha
     , extra >=1.0 && <1.8
     , hashmap >=1.0.0 && <1.4
     , megaparsec >=8.0.0 && <=10.0.0
+    , optparse-applicative >=0.17.0.0 && <0.18.0.0
   default-language: Haskell2010
 
 test-suite Kroha-tests
@@ -88,4 +90,5 @@ test-suite Kroha-tests
     , extra >=1.0 && <1.8
     , hashmap >=1.0.0 && <1.4
     , megaparsec >=8.0.0 && <=10.0.0
+    , optparse-applicative >=0.17.0.0 && <0.18.0.0
   default-language: Haskell2010

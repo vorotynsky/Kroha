@@ -32,6 +32,7 @@ dependencies:
 - extra >= 1.0 && < 1.8
 - comonad >= 5 && < 5.1
 - hashmap >= 1.0.0 && < 1.4
+- optparse-applicative >= 0.17.0.0 && < 0.18.0.0
 
 executables:
   Kroha:
