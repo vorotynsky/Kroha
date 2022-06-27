@@ -42,6 +42,7 @@ executable Kroha
       Kroha.Types
       Paths_Kroha
   hs-source-dirs:
+      app
       src
   ghc-options: -XTupleSections -XDeriveTraversable -XRankNTypes -XImplicitParams -XTypeFamilies
   build-depends:
@@ -73,7 +74,6 @@ test-suite Kroha-tests
       Kroha.Syntax.Statements
       Kroha.Syntax.Syntax
       Kroha.Types
-      Main
       Paths_Kroha
   hs-source-dirs:
       test
