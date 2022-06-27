@@ -69,11 +69,21 @@ litType :: Literal -> Result TypeId
 litType l@(IntegerLiteral x) | x >= 0   && x < 65536 = Right 2
                              | otherwise             = Left (BackendError (show l ++ " is not in [0; 65536)"))
 
+regsBase16 = zip ((\x -> fmap ((:) x . pure) "lhx") =<< "abcd") (cycle [0, 0, 1])
+regsBase32 = zip ((fmap (\x -> 'e':x:"x")) "abcd") (cycle [3])
+regsBase64 = zip ((fmap (\x -> 'r':x:"x")) "abcd") (cycle [4])
+
+regsSpec r = zip ['r':r, 'e':r, r, r++"l"] [4,3,1,0]
+regsInfo = concatMap regsSpec ["sp", "bp", "si", "di"]
+
+regsRf r = zip [r, r++"d", r++"w", r++"b"] [4, 3, 1, 0]
+regsR = concatMap regsRf $ fmap ((:) 'r' . show) [8..15]
+
 nasmTypes = TypeConfig
-    { types = (fmap . first) TypeName [("int8", 8), ("int16", 16), ("+literal+", 16)]
+    { types = (fmap . first) TypeName [("int8", 8), ("int16", 16), ("+literal+", 16), ("int32", 32), ("int64", 64)]
     , pointerType = 1
-    , registers = zip ((\x -> fmap ((:) x . pure) "lhx") =<< "abcd") (cycle [0, 0, 1])
-    , typeCasts = buildG (0, 3) [(0, 2), (1, 2)]
+    , registers = regsBase16 ++ regsBase32 ++ regsBase64 ++ regsInfo ++ regsR
+    , typeCasts = buildG (0, 5) [(0, 2), (1, 2), (3, 2), (4, 2)]
     , literalType = litType }
 
 size2type size = fromJust . lookup size . fmap (\(a, b) -> (b, a)) $ types nasmTypes
