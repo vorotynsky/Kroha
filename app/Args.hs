@@ -6,11 +6,24 @@ import Kroha.Backends.Common
 import Kroha.Backends.Nasm
 
 data Options = Options 
-    { files :: [FilePath] }
+    { backend :: Backend 
+    , files   :: [FilePath] }
+
+backends = [("nasm16", nasm 16), ("nasm32", nasm 32), ("nasm64", nasm 64)]
+
+toRight _ (Just x) = Right x
+toRight x Nothing  = Left x
+
+backendParser = option (eitherReader (\x -> toRight "Unknown backend" $ lookup x backends))
+    ( long "assembly" 
+    <> metavar "BACKEND" 
+    <> help "Specify backend"
+    <> value (nasm 64) )
 
 optionsParser :: Parser Options
 optionsParser = Options
-    <$> some (argument str (metavar "FILES..."))
+    <$> backendParser
+    <*> some (argument str (metavar "FILES..."))
 
 readOptions :: IO Options
 readOptions = execParser opts

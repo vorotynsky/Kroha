@@ -7,18 +7,19 @@ import           System.Exit        (exitFailure)
 
 import           Args
 import           Kroha
+import           Kroha.Backends.Common
 
-parse :: [(String, String)] -> IO String
-parse contents = do
-                 let (errors, results) = partitionEithers . fmap (uncurry kroha) $ contents
-                 errors <- traverse putStrLn errors
-                 if null errors then pure () else exitFailure
-                 return $ intercalate "\n\n" results
+parse :: Backend -> [(String, String)] -> IO String
+parse backend contents = 
+    do let (errors, results) = partitionEithers . fmap (uncurry $ kroha backend) $ contents
+       errors <- traverse putStrLn errors
+       if null errors then pure () else exitFailure
+       return $ intercalate "\n\n" results
 
 main :: IO ()
 main = do
     options <- readOptions
     contents <- mapM readFile (files options)
-    parsed <- parse (zip (files options) contents)
+    parsed <- parse (backend options) (zip (files options) contents)
     putStrLn "; build with Kroha\n; see: https://github.com/vorotynsky/Kroha \n"
     putStrLn parsed

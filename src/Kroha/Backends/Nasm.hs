@@ -31,7 +31,7 @@ nasmTypeG , nasmTypeL, untyped :: TypeName -> String
     where append x s = s ++ x
 
 
-target :: (TypeName -> String) -> Target -> String
+target :: (?bp :: RegisterName) => (TypeName -> String) -> Target -> String
 target tf (LiteralTarget (IntegerLiteral num)) = show num
 target tf (StackTarget (offset, s))            = (tf . size2type) s ++ "[bp - " ++ show (bytes offset) ++ "]"
 target tf (RegisterTarget reg)                 = reg
@@ -43,15 +43,15 @@ jump NotEquals = "jne"
 jump Less      = "jl"
 jump Greater   = "jg"
 
-nasm16I :: Instruction -> [String]
-nasm16I (Body _ _)                   = []
-nasm16I (Assembly asm)               = [asm]
-nasm16I (Label lbl)                  = [label lbl ++ ":"]
-nasm16I (Move l r)                   = ["mov " ++ target nasmTypeL l ++ ", " ++ target untyped r]
-nasm16I (CallI l args)               = (fmap (("push " ++) . target nasmTypeL) . reverse $ args) ++ ["call " ++ label l, "add sp, " ++ show ((length args) * 2)]
-nasm16I (Jump l Nothing)             = ["jmp " ++ label l]
-nasm16I (Jump lbl (Just (l, c, r)))  = ["cmp " ++ target nasmTypeL l ++ ", " ++ target untyped r, jump c ++ " " ++ label lbl]
-nasm16I (StackAlloc s)               = ["enter " ++ show (bytes s) ++ ", 0"]
+nasmI :: (?sp :: RegisterName, ?bp :: RegisterName) => Instruction -> [String]
+nasmI (Body _ _)                   = []
+nasmI (Assembly asm)               = [asm]
+nasmI (Label lbl)                  = [label lbl ++ ":"]
+nasmI (Move l r)                   = ["mov " ++ target nasmTypeL l ++ ", " ++ target untyped r]
+nasmI (CallI l args)               = (fmap (("push " ++) . target nasmTypeL) . reverse $ args) ++ ["call " ++ label l, "add " ++ ?sp ++ ", " ++ show ((length args) * 2)]
+nasmI (Jump l Nothing)             = ["jmp " ++ label l]
+nasmI (Jump lbl (Just (l, c, r)))  = ["cmp " ++ target nasmTypeL l ++ ", " ++ target untyped r, jump c ++ " " ++ label lbl]
+nasmI (StackAlloc s)               = ["enter " ++ show (bytes s) ++ ", 0"]
 
 nasmSection :: Section -> String -> String
 nasmSection section body = header <> body <> "\n\n"
@@ -88,8 +88,13 @@ nasmTypes = TypeConfig
 
 size2type size = fromJust . lookup size . fmap (\(a, b) -> (b, a)) $ types nasmTypes
 
-nasm = Backend
-    { instruction = nasm16I
+nasmInstruction 16 = let ?bp =  "bp" in let ?sp =  "sp" in nasmI
+nasmInstruction 32 = let ?bp = "ebp" in let ?sp = "esp" in nasmI
+nasmInstruction 64 = let ?bp = "rbp" in let ?sp = "rsp" in nasmI
+
+
+nasm arch = Backend
+    { instruction = nasmInstruction arch
     , bodyWrap    = id
     , indent      = "  "
     , section     = nasmSection

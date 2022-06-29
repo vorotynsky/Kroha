@@ -9,6 +9,7 @@ import           Data.List.Extra     (trim)
 import           Data.Maybe          (fromJust, isJust)
 import           Data.Tuple.Extra    (both)
 import           Kroha               (kroha)
+import           Kroha.Backends.Nasm (nasm)
 import           Test.HUnit
 
 type TestName = String
@@ -53,7 +54,7 @@ testCase :: TestName -> Test
 testCase name = TestCase $ do
     text <- readFile $ toFile ".test.kr" name
     let (program, expected) = both trim $ extract text
-    let actual = trim . fromEither $ kroha name program
+    let actual = trim . fromEither $ kroha (nasm 16) name program
     assertProgram name expected actual
     where extract text = fromJust . join . find isJust . fmap (`splitBy` text) $ ["nasm", "errors"]
 
