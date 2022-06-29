@@ -5,9 +5,14 @@ import Options.Applicative
 import Kroha.Backends.Common
 import Kroha.Backends.Nasm
 
+data Output 
+    = StdOut
+    | File FilePath
+
 data Options = Options 
     { backend :: Backend 
-    , files   :: [FilePath] }
+    , files   :: [FilePath]
+    , output  :: Output }
 
 backends = [("nasm16", nasm 16), ("nasm32", nasm 32), ("nasm64", nasm 64)]
 
@@ -20,10 +25,18 @@ backendParser = option (eitherReader (\x -> toRight "Unknown backend" $ lookup x
     <> help "Specify backend"
     <> value (nasm 64) )
 
+outputParser :: Parser FilePath
+outputParser = option str
+    ( long "output"
+    <> short 'o'
+    <> metavar "FILE" 
+    <> help "Place the output into <FILE>")
+
 optionsParser :: Parser Options
 optionsParser = Options
     <$> backendParser
     <*> some (argument str (metavar "FILES..."))
+    <*> (flag' StdOut (long "stdout") <|> fmap File outputParser <|> pure (File "./kroha.asm"))
 
 readOptions :: IO Options
 readOptions = execParser opts
