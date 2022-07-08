@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           Kroha
-version:        1.3.2.0
+version:        1.3.3.0
 description:    Please see the README on GitHub at <https://github.com/vorotynsky/Kroha#readme>
 homepage:       https://github.com/vorotynsky/Kroha#readme
 bug-reports:    https://github.com/vorotynsky/Kroha/issues
@@ -25,6 +25,7 @@ source-repository head
 executable Kroha
   main-is: Main.hs
   other-modules:
+      Args
       Kroha
       Kroha.Backends.Common
       Kroha.Backends.Nasm
@@ -42,6 +43,7 @@ executable Kroha
       Kroha.Types
       Paths_Kroha
   hs-source-dirs:
+      app
       src
   ghc-options: -XTupleSections -XDeriveTraversable -XRankNTypes -XImplicitParams -XTypeFamilies
   build-depends:
@@ -51,6 +53,7 @@ executable Kroha
     , extra >=1.0 && <1.8
     , hashmap >=1.0.0 && <1.4
     , megaparsec >=8.0.0 && <=10.0.0
+    , optparse-applicative >=0.17.0.0 && <0.18.0.0
   default-language: Haskell2010
 
 test-suite Kroha-tests
@@ -73,7 +76,6 @@ test-suite Kroha-tests
       Kroha.Syntax.Statements
       Kroha.Syntax.Syntax
       Kroha.Types
-      Main
       Paths_Kroha
   hs-source-dirs:
       test
@@ -88,4 +90,5 @@ test-suite Kroha-tests
     , extra >=1.0 && <1.8
     , hashmap >=1.0.0 && <1.4
     , megaparsec >=8.0.0 && <=10.0.0
+    , optparse-applicative >=0.17.0.0 && <0.18.0.0
   default-language: Haskell2010
